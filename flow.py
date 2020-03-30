@@ -1,8 +1,8 @@
-import numpy
-import random
+import numpy as np
+# import random
 from scipy.integrate import solve_ivp
 
-OUTFILE1_NAME = "nr.dat"  
+OUTFILE1_NAME = "nr.dat" 
 OUTFILE2_NAME = "esigma.dat"
 
 NEQS = 8

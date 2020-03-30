@@ -1,5 +1,5 @@
-import numpy
-import random
+import numpy as np
+# import random
 from scipy.integrate import solve_ivp
 
 class Calc:
@@ -30,7 +30,7 @@ def pick_init_vals ():
         
     init_Nefolds = random.uniform(NUMEFOLDSMIN , NUMEFOLDSMAX)
     
-    return init_vals , init_Nefolds
+    return init_vals, init_Nefolds
 
 def derivs (t, y):
     dydN = numpy.zeros(NEQS , dtype=float , order='C')
