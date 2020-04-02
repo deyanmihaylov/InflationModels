@@ -157,8 +157,7 @@ calc = Calc()
 
 path = numpy.zeros (( NEQS , kmax ))
 
-# Open output files
-
+# Open or create output files
 try:
     outfile1 = open (OUTFILE1_NAME, "w")
 except IOError as e:
