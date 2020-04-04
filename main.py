@@ -1,11 +1,17 @@
 import numpy as np
 # import random
-from scipy.integrate import solve_ivp
+# from scipy.integrate import solve_ivp
+
+NEQS = 8
+kmax = 20000
+
+OUTFILE1_NAME = "nr.dat"
+OUTFILE2_NAME = "esigma.dat"
 
 class Calc:
     def __init__(self):
-        self.Y = numpy.zeros (NEQS, dtype=float, order='C')
-        self.initY = numpy.zeros (NEQS, dtype=float, order='C')
+        self.Y = np.zeros(NEQS, dtype=float, order='C')
+        self.initY = np.zeros(NEQS, dtype=float, order='C')
         self.ret = ""
         self.npoints = 0
         self.Nefolds = 0.0
@@ -14,6 +20,81 @@ class Calc:
 # parameters, as well as a randomly chosen amount of inflation, Nefolds.
 
 # POSSIBLE ISSUE WITH EXACT DECIMAL NUMBERS
+
+def main():
+    calc = Calc()
+
+    try:
+        outfile1 = open(OUTFILE1_NAME, "w")
+    except IOError as e:
+        print("Could not open file" , str(OUTFILE1_NAME) , ", errno =" , str(e) , ".")
+        
+    try:
+        outfile2 = open(OUTFILE2_NAME, "w")
+    except IOError as e:
+        print("Could not open file" , str(OUTFILE2_NAME) , ", errno =" , str(e) , ".")
+
+    # allocate buffers
+    y = np.zeros(NEQS, dtype=float, order='C')
+    yinit = np.zeros(NEQS, dtype=float, order='C')
+
+    # iters = total number of iterations
+    iters = 0
+
+    # points = points saved with n < NMAX
+    points = 0
+
+    errcount = 0
+
+    outcount = 0
+
+    # asymcount = points with 0 < n < NMAX , r = 0
+    asymcount = 0
+
+    # nontrivcount = nontrivial points
+    nontrivcount = 0
+
+    # insuffcount = points where slow roll breaks down before N-efolds
+    insuffcount = 0
+
+    # noconvcount = points that do not converge to either a late time attractor or end of inflation
+    noncovcount = 0
+
+    badncount = 0
+
+    savedone = 0
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 def pick_init_vals ():
     init_vals = numpy.zeros (NEQS, dtype=float, order='C')
