@@ -7,6 +7,7 @@ kmax = 20000
 
 OUTFILE1_NAME = "nr.dat"
 OUTFILE2_NAME = "esigma.dat"
+NUMPOINTS = 20000
 
 class Calc:
     def __init__(self):
@@ -58,13 +59,25 @@ def main():
     insuffcount = 0
 
     # noconvcount = points that do not converge to either a late time attractor or end of inflation
-    noncovcount = 0
+    noconvcount = 0
 
     badncount = 0
 
     savedone = 0
 
-    
+    while nontrivcount < NUMPOINTS:
+        iters += 1
+
+        if iters % 100 == 0:
+            if iters % 1000 == 0:
+                print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, \
+                        noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+                print(iters)
+            else
+                print(".")
+
+        yinit, calc.Nefolds = pick_init_vals()
+
 
 
 
