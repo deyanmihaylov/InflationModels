@@ -9,6 +9,9 @@ OUTFILE1_NAME = "nr.dat"
 OUTFILE2_NAME = "esigma.dat"
 NUMPOINTS = 20000
 
+NUMEFOLDSMAX = 60.
+NUMEFOLDSMIN = 46.
+
 class Calc:
     def __init__(self):
         self.Y = np.zeros(NEQS, dtype=float, order='C')
@@ -16,6 +19,24 @@ class Calc:
         self.ret = ""
         self.npoints = 0
         self.Nefolds = 0.0
+
+
+def pick_init_vals ():
+    init_vals = np.zeros (NEQS, dtype=float, order='C')
+    
+    init_vals[0] = 0.0
+    init_vals[1] = 1.0
+    init_vals[2] = np.random.uniform(0.0 , 0.8)
+    init_vals[3] = np.random.uniform(-0.5 , 0.5)
+    init_vals[4] = np.random.uniform(-0.05 , 0.05)
+    
+    for i in range (5 , NEQS):
+        upper_val = 1 * 0.05 * 0.1 ** (i-5)  - 0.5 * 0.05 * 0.1 ** (i-5)
+        init_vals[i] = np.random.uniform(-upper_val , upper_val)
+        
+    init_Nefolds = np.random.uniform(NUMEFOLDSMIN , NUMEFOLDSMAX)
+    
+    return init_vals, init_Nefolds
 
 # Fills vector * yinit with randomly chosen initial values of the flow
 # parameters, as well as a randomly chosen amount of inflation, Nefolds.
@@ -70,14 +91,17 @@ def main():
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
-                print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, \
-                        noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+                print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
                 print(iters)
-            else
+            else:
                 print(".")
 
         yinit, calc.Nefolds = pick_init_vals()
 
+        break
+
+if __name__ == "__main__":
+    main()
 
 
 
@@ -108,23 +132,7 @@ def main():
 
 
 
-
-def pick_init_vals ():
-    init_vals = numpy.zeros (NEQS, dtype=float, order='C')
-    
-    init_vals[0] = 0.0
-    init_vals[1] = 1.0
-    init_vals[2] = random.uniform(0.0 , 0.8)
-    init_vals[3] = random.uniform(-0.5 , 0.5)
-    init_vals[4] = random.uniform(-0.05 , 0.05)
-    
-    for i in range (5 , NEQS):
-        upper_val = 1 * 0.05 * 0.1 ** (i-5)  - 0.5 * 0.05 * 0.1 ** (i-5)
-        init_vals[i] = random.uniform(-upper_val , upper_val)
-        
-    init_Nefolds = random.uniform(NUMEFOLDSMIN , NUMEFOLDSMAX)
-    
-    return init_vals, init_Nefolds
+"""
 
 def derivs (t, y):
     dydN = numpy.zeros(NEQS , dtype=float , order='C')
@@ -317,7 +325,7 @@ while nontrivcount < NUMPOINTS:
         break
 
 
-
+"""
 
 
 
