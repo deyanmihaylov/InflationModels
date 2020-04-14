@@ -1,6 +1,15 @@
 import numpy as np
-# import random
+import sys
 # from scipy.integrate import solve_ivp
+
+import pygsl.rng
+
+my_random = pygsl.rng.ranlxd2()
+my_random.set(0)
+
+np.random.seed(0)
+
+SPECTRUM = False
 
 NEQS = 8
 kmax = 20000
@@ -22,19 +31,22 @@ class Calc:
 
 
 def pick_init_vals ():
-    init_vals = np.zeros (NEQS, dtype=float, order='C')
+    init_vals = np.zeros(NEQS, dtype=float, order='C')
     
     init_vals[0] = 0.0
     init_vals[1] = 1.0
-    init_vals[2] = np.random.uniform(0.0 , 0.8)
-    init_vals[3] = np.random.uniform(-0.5 , 0.5)
-    init_vals[4] = np.random.uniform(-0.05 , 0.05)
+    init_vals[2] = my_random.uniform() * 0.8
+    init_vals[3] = my_random.uniform() - 0.5
+    init_vals[4] = my_random.uniform()*0.1 - 0.05
+
+    prefact = 0.05
     
     for i in range (5 , NEQS):
-        upper_val = 1 * 0.05 * 0.1 ** (i-5)  - 0.5 * 0.05 * 0.1 ** (i-5)
-        init_vals[i] = np.random.uniform(-upper_val , upper_val)
+        # upper_val = 1 * 0.05 * 0.1 ** (i-5)  - 0.5 * 0.05 * 0.1 ** (i-5)
+        init_vals[i] = my_random.uniform() * prefact - (0.5*prefact)
+        prefact *= 0.1
         
-    init_Nefolds = np.random.uniform(NUMEFOLDSMIN , NUMEFOLDSMAX)
+    init_Nefolds = my_random.uniform() * (NUMEFOLDSMAX - NUMEFOLDSMIN) + NUMEFOLDSMIN
     
     return init_vals, init_Nefolds
 
@@ -46,15 +58,21 @@ def pick_init_vals ():
 def main():
     calc = Calc()
 
+    if SPECTRUM is True:
+        # write code for SPECTRUM
+        pass
+
     try:
         outfile1 = open(OUTFILE1_NAME, "w")
     except IOError as e:
-        print("Could not open file" , str(OUTFILE1_NAME) , ", errno =" , str(e) , ".")
+        print(f"Could not open file {OUTFILE1_NAME}, errno = {e}.")
+        sys.exit()
         
     try:
         outfile2 = open(OUTFILE2_NAME, "w")
     except IOError as e:
-        print("Could not open file" , str(OUTFILE2_NAME) , ", errno =" , str(e) , ".")
+        print(f"Could not open file {OUTFILE2_NAME}, errno = {e}.")
+        sys.exit()
 
     # allocate buffers
     y = np.zeros(NEQS, dtype=float, order='C')
@@ -91,12 +109,16 @@ def main():
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
-                print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+                print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, \
+                        noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
                 print(iters)
             else:
                 print(".")
 
         yinit, calc.Nefolds = pick_init_vals()
+        
+        for y in yinit:
+            print(y)
 
         break
 
