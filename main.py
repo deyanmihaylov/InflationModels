@@ -42,7 +42,6 @@ def pick_init_vals ():
     prefact = 0.05
     
     for i in range (5 , NEQS):
-        # upper_val = 1 * 0.05 * 0.1 ** (i-5)  - 0.5 * 0.05 * 0.1 ** (i-5)
         init_vals[i] = my_random.uniform() * prefact - (0.5*prefact)
         prefact *= 0.1
         
