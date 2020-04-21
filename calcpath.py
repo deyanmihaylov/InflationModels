@@ -1,8 +1,21 @@
+import numpy as np
+
+from int_de import *
+
+NEQS = 8
+kmax = 20000
+
 VERYSMALLNUM = 1e-18
 LOTSOFEFOLDS = 1000.0
 
 def calcpath(Nefolds, y, path, N, count):
     retval = "internal_error"
+    i = None
+    j = None
+    k = None
+    z = None
+    kount = None
+    Hnorm = None
     
     # Check to make sure we are calculating to sufficient order.
     if NEQS < 6:
@@ -18,12 +31,16 @@ def calcpath(Nefolds, y, path, N, count):
     
     # First find the end of inflation, when epsilon crosses through unity.
     Nstart = LOTSOFEFOLDS
-    Nend = 0.0
+    Nend = 0.
     
-    z, kount, xp, yp = int_de(y, Nstart, Nend, derivs)
+    z, kount = int_de(y, Nstart, Nend, kount, kmax, yp, xp, NEQS, derivs)
 
     print(z, kount, xp, yp)
     exit()
+
+    if z:
+        retval = "internal_error"
+        z = 0
     
     y = yp [:, -1]
     
@@ -62,24 +79,25 @@ def calcpath(Nefolds, y, path, N, count):
                     
     print (retval)
 
-def derivs(t, y):
+def derivs(t, y, dydN):
     dydN = np.zeros(NEQS, dtype=float, order='C')
     
     if y[2] >= 1.0:
         dydN = np.zeros(NEQS , dtype=float , order='C')
     else:
         if y[2] > VERYSMALLNUM:
-            dydN[0] = - np.sqrt ( y[2] / (4 * np.pi ) )
+            dydN[0] = - np.sqrt(y[2] / (4 * np.pi ))
         else:
             dydN[0] = 0.0
         
         dydN[1] = y[1] * y[2]
-        dydN[2] = y[2] * ( y[3] + 2.0 * y[2] )
-        dydN[3] = 2.0 * y[4] - 5.0 * y[2] * y[3] - 12.0 * y[2] * y[2]
+        dydN[2] = y[2] * (y[3] + 2.0 * y[2])
+        dydN[3] = 2. * y[4] - 5. * y[2] * y[3] - 12. * y[2] * y[2]
         
         for i in range(4, NEQS-1):
             dydN[i] = ( 0.5 * (i-3) * y[3] + (i-4) * y[2] ) * y[i] + y[i+1]
             
         dydN[NEQS-1] = ( 0.5 * (NEQS-4) * y[3] + (NEQS-5) * y[2] ) * y[NEQS-1]
-    
+
     return dydN
+

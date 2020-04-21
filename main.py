@@ -2,6 +2,9 @@ import numpy as np
 import sys
 from scipy.integrate import solve_ivp
 
+from calcpath import *
+from int_de import *
+
 import pygsl.rng
 
 my_random = pygsl.rng.ranlxd2()
@@ -10,9 +13,6 @@ my_random.set(0)
 np.random.seed(0)
 
 SPECTRUM = False
-
-NEQS = 8
-kmax = 20000
 
 OUTFILE1_NAME = "nr.dat"
 OUTFILE2_NAME = "esigma.dat"
@@ -48,8 +48,6 @@ def pick_init_vals ():
     init_Nefolds = my_random.uniform() * (NUMEFOLDSMAX - NUMEFOLDSMIN) + NUMEFOLDSMIN
     
     return init_vals, init_Nefolds
-
-
 
 def main():
     calc = Calc()
