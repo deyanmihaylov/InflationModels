@@ -2,6 +2,8 @@ import numpy as np
 
 from int_de import *
 
+SPECTRUM = False
+
 NEQS = 8
 kmax = 20000
 
@@ -35,49 +37,69 @@ def calcpath(Nefolds, y, path, N, count):
     
     z, kount = int_de(y, Nstart, Nend, kount, kmax, yp, xp, NEQS, derivs)
 
-    print(z, kount, xp, yp)
-    exit()
+    yp = yp[:, 0:kount].copy()
+    xp = xp[0:kount].copy()
+
+    y = yp[:, -1].copy()
 
     if z:
         retval = "internal_error"
         z = 0
-    
-    y = yp [:, -1]
-    
-    if z < 0:
-        retval = "internal_error"
-        z = 0
-#         goto end;
     else:
-#         Find when epsilon passes through unity.
-        i = check_convergence ( yp , kount )
-        
-        if not i:
-#             We never found an end to inflation, so we must be at a late-time attractor.
-            if y[2] > SMALLNUM or y[3] < 0.0:
-#                 The system did not evolve to a known asymptote.
+        # Find when epsilon passes through unity
+        i = check_convergence(yp, kount)
+
+        if i == 0: # We never found an end to inflation, so we must be at a late-time attractor
+            print("not")
+            if y[2] > SMALLNUM or y[3] < 0.: # The system did not evolve to a known asymptote
                 retval = "noconverge"
             else:
                 retval = "asymptote"
-        else:
-#             We found an end to inflation: integrate backwards Nefolds e-folds from that point.
+        else: # if check_convergence: we have found an end to inflation
+            # We found an end to inflation: integrate backwards Nefolds e-folds from that point
+
             Nstart = xp[i-2] - xp[i-1]
             Nend = Nefolds
-            
-            y = yp [ : , i-2 ].copy()
-            
-            z , kount , xp , yp = int_de ( y , Nstart , Nend , derivs )
-            
-            if z < 0:
+
+            y = yp[:, i-2].copy()
+
+            yp = np.zeros((NEQS, kmax), dtype=float, order='C')
+            xp = np.zeros(kmax, dtype=float, order='C')
+
+            z, kount = int_de(y, Nstart, Nend, kount, kmax, yp, xp, NEQS, derivs)
+
+            if z:
                 retval = "internal_error"
                 z = 0
+            elif check_convergence(yp, count):
+                retval = "insuff"
             else:
-                if check_convergence ( yp , kount ):
-                    retval = "insuff"
-                else:
-                    retval = "nontrivial"
-                    
-    print (retval)
+                retval = "nontrivial"
+
+    # Normalize H to give the correct CMB amplitude.  If we are not interested in generating power
+    # spectra, normalizing H to give CMB amplitude of 10^-5 at horizon crossing (N = Nefolds) is
+    # sufficient
+
+    if SPECTRUM == False:
+        if retval == "nontrivial":
+            Hnorm = 0.00001 * 2 * np.pi * np.sqrt(y[2]) / y[1]
+            y[1] = Hnorm * y[1]
+
+            yp[1, :] = Hnorm * yp[1, :]
+            yp[0, :] = yp[0, :] - y[0]
+
+    # Fill in return buffers with path info.  Note that the calling
+    # function is responsible for freeing these buffers!  The
+    # buffers are only filled in if non-null pointers are provided.
+
+    if (path is not None) and (N is not None) and (retval != "internal_error") and kount > 1:
+        path = yp.copy()
+        N = xp.copy()
+        count = kount
+    else:
+        count = 0
+
+    return retval    
 
 def derivs(t, y, dydN):
     dydN = np.zeros(NEQS, dtype=float, order='C')
@@ -100,4 +122,28 @@ def derivs(t, y, dydN):
         dydN[NEQS-1] = ( 0.5 * (NEQS-4) * y[3] + (NEQS-5) * y[2] ) * y[NEQS-1]
 
     return dydN
+
+def check_convergence(yy, kount):
+    for i in range(kount):
+        if np.abs(yy[2, i]) >= 1.:
+            return i
+        
+    return 0
+
+def specindex(y):
+    # include check for SECONDORDER
+
+    result = 1.0 + y[3]
+            - 4.75564*y[2]*y[2]
+            - 0.64815*y[2]*y[3]
+            + 1.45927*y[4]
+            + 7.55258*y[2]*y[2]*y[2]
+            + 12.0176*y[2]*y[2]*y[3]
+            + 3.12145*y[2]*y[3]*y[3]
+            + 0.0725242*y[3]*y[3]*y[3]
+            + 5.92913*y[2]*y[4]
+            + 0.085369*y[3]*y[4]
+            + 0.290072*y[5]
+
+    return result
 

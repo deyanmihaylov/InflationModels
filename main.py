@@ -14,6 +14,9 @@ np.random.seed(0)
 
 SPECTRUM = False
 
+NMAX = 1.5
+NMIN = 0.5
+
 OUTFILE1_NAME = "nr.dat"
 OUTFILE2_NAME = "esigma.dat"
 NUMPOINTS = 20000
@@ -117,6 +120,24 @@ def main():
         y = yinit.copy()
 
         calc.ret = calcpath(calc.Nefolds, y, path, N, calc.npoints)
+
+        if calc.ret == "asymptote":
+            # Check to see if the spectral index is within the slow roll range
+            if specindex(y) >= NMIN and specindex(y) <= NMAX:
+                pass
+            else:
+                pass
+        elif calc.ret == "nontrivial":
+            pass
+        elif calc.ret == "insuff":
+            insuffcount += 1
+            break
+        elif calc.ret == "noconverge":
+            noconvcount += 1
+            break
+        else:
+            errcount += 1
+            break
 
         break
 
