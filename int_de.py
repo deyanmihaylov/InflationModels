@@ -1,5 +1,7 @@
-from scipy.integrate import solve_ivp
+# from scipy.integrate import solve_ivp
 import pygsl.odeiv as odeiv
+
+from MacroDefinitions import *
 
 def int_de(y, N, Nend, kount, kmax, ypp, xpp, NEQS, derivs):
     h = 1e-6

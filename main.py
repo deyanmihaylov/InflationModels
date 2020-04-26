@@ -2,6 +2,7 @@ import numpy as np
 import sys
 from scipy.integrate import solve_ivp
 
+from MacroDefinitions import *
 from calcpath import *
 from int_de import *
 
@@ -11,8 +12,6 @@ my_random = pygsl.rng.ranlxd2()
 my_random.set(0)
 
 np.random.seed(0)
-
-SPECTRUM = False
 
 NMAX = 1.5
 NMIN = 0.5
@@ -109,168 +108,79 @@ def main():
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
-                print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, \
-                        noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
-                print(iters)
+                print(f"\n asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+                print(f"\n{iters}", end="")
             else:
-                print(".")
+                print(".", end="")
 
         yinit, calc.Nefolds = pick_init_vals()
 
         y = yinit.copy()
 
-        calc.ret = calcpath(calc.Nefolds, y, path, N, calc.npoints)
+        calc.ret, y, calc.npoints = calcpath(calc.Nefolds, y, path, N, calc.npoints)
 
         if calc.ret == "asymptote":
             # Check to see if the spectral index is within the slow roll range
             if specindex(y) >= NMIN and specindex(y) <= NMAX:
-                pass
-            else:
-                pass
+                # Output final values, outfile1 contains
+                # observables r, n,  dn/dlog(k), outfile2 countains
+                # epsilon, sigma, xsi.
+                asymcount += 1
+
+                outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y),specindex(y),dspecindex(y)))
+                outfile1.flush()
+
+                for i in range(NEQS):
+                    outfile2.write("%le\n" % (y[i]))
+
+                outfile2.write("%f\n" % (calc.Nefolds))
+                outfile2.flush()
+
+                points += 1
+                savedone = 0
+            else: # Spectral index out of range
+                badncount += 1
         elif calc.ret == "nontrivial":
-            pass
+            outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y),specindex(y),dspecindex(y)))
+            outfile1.flush()
+
+            for i in range(NEQS):
+                outfile2.write("%le\n" % (y[i]))
+
+            outfile2.write("%f\n" % (calc.Nefolds))
+            outfile2.flush()
+
+            points += 1
+            savedone = 0
+            nontrivcount += 1
+
+            if SPECTRUM is True:
+                # Add SPECTRUM part of code here
+                pass
         elif calc.ret == "insuff":
             insuffcount += 1
-            break
         elif calc.ret == "noconverge":
             noconvcount += 1
-            break
         else:
             errcount += 1
-            break
 
-        break
+        if SAVEPATHS is True:
+            # Add SAVEPATHS code later
+            pass
+
+        # print("D", calc.npoints)
+        # exit()
+
+
+
+
+
+
 
 if __name__ == "__main__":
     main()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""
-
-
-
-def check_convergence (yy , kount):
-    for i in range (kount):
-        if numpy.absolute ( yy [ 2 , i ] ) >= 1.0:
-            return i
-            break
-        
-    return 0
-
-OUTFILE1_NAME = "nr.dat"  
-OUTFILE2_NAME = "esigma.dat"
-
-NEQS = 8
-kmax = 20000
-
-NUMPOINTS = 20000
-
-NUMEFOLDSMAX = 60.0
-NUMEFOLDSMIN = 40.0
-
-SMALLNUM = 0.0001
-
-LOTSOFEFOLDS = 1000.0
-
-calc = Calc()
-
-path = numpy.zeros (( NEQS , kmax ))
-
-# Open or create output files
-try:
-    outfile1 = open (OUTFILE1_NAME, "w")
-except IOError as e:
-    print ("Could not open file" , str(OUTFILE1_NAME) , ", errno =" , str(e) , ".")
-    
-try:
-    outfile2 = open (OUTFILE2_NAME, "w")
-except IOError as e:
-    print ("Could not open file" , str(OUTFILE2_NAME) , ", errno =" , str(e) , ".")
-    
-# Allocate buffers
-
-y = numpy.zeros(NEQS, dtype=float, order='C')
-yinit = numpy.zeros(NEQS, dtype=float, order='C')
-
-# iters = total number of iterations
-# points = points saved with n < NMAX
-# asymcount = points with 0 < n < NMAX , r = 0
-# nontrivcount = nontrivial points
-# insuffcount = points where slow roll breaks down before N efolds
-# noconvcount = points that do not converge to either a late
-# time attractor or end of inflation.
-    
-iters = 0
-points = 0
-errcount = 0
-outcount = 0
-asymcount = 0
-nontrivcount = 0
-insuffcount = 0
-noconvcount = 0
-badncount = 0
-savedone = 0
-
-# Currently this loop is set to depend on the number of
-# nontrivial points.  This can be changed to depend on total
-# number of models, or other criteria.
-
-deyancount = 0
-
-while nontrivcount < NUMPOINTS:
-    deyancount += 1
-    
-    iters += 1
-    
-    if iters % 100 == 0:
-        if iters % 1000 == 0:
-            print ("\n asymcount =" , asymcount , ",nontrivcount =" , nontrivcount , ",insuffcount =" , insuffcount , ", noconvcount =" , noconvcount , ", badncount =" , badncount , ", errcount =" , errcount , "\n")
-            print ("\n", iters)
-        else:
-            print (".")
-            
-# Select a random initial condition such that the slow
-# roll hierarchy converges.
-
-    yinit , calc.Nefolds = pick_init_vals()
-    
-    y = yinit.copy()
-    
-    calc.ret = calcpath ( calc.Nefolds , y , path , calc.npoints)
-    
-    if deyancount > 100:
-        break
-
-
-"""
 
 
 

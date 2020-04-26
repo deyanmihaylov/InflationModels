@@ -1,14 +1,16 @@
 import numpy as np
 
+from MacroDefinitions import *
 from int_de import *
-
-SPECTRUM = False
 
 NEQS = 8
 kmax = 20000
 
+SMALLNUM = 0.0001
 VERYSMALLNUM = 1e-18
 LOTSOFEFOLDS = 1000.0
+
+c = 0.0814514 # = 4 (ln(2)+\gamma)-5, \gamma = 0.5772156649
 
 def calcpath(Nefolds, y, path, N, count):
     retval = "internal_error"
@@ -50,7 +52,6 @@ def calcpath(Nefolds, y, path, N, count):
         i = check_convergence(yp, kount)
 
         if i == 0: # We never found an end to inflation, so we must be at a late-time attractor
-            print("not")
             if y[2] > SMALLNUM or y[3] < 0.: # The system did not evolve to a known asymptote
                 retval = "noconverge"
             else:
@@ -68,10 +69,13 @@ def calcpath(Nefolds, y, path, N, count):
 
             z, kount = int_de(y, Nstart, Nend, kount, kmax, yp, xp, NEQS, derivs)
 
+            yp = yp[:, 0:kount].copy()
+            xp = xp[0:kount].copy()
+
             if z:
                 retval = "internal_error"
                 z = 0
-            elif check_convergence(yp, count):
+            elif check_convergence(yp, kount):
                 retval = "insuff"
             else:
                 retval = "nontrivial"
@@ -99,7 +103,7 @@ def calcpath(Nefolds, y, path, N, count):
     else:
         count = 0
 
-    return retval    
+    return retval, y, count  
 
 def derivs(t, y, dydN):
     dydN = np.zeros(NEQS, dtype=float, order='C')
@@ -130,10 +134,16 @@ def check_convergence(yy, kount):
         
     return 0
 
-def specindex(y):
-    # include check for SECONDORDER
+def tsratio(y):
+    tsratio = 16 * y[2] * (1.-c*(y[3]+2.*y[2]))
 
-    result = 1.0 + y[3]
+    return tsratio
+
+def specindex(y):
+    if SECONDORDER is True:
+        specindex = 1. + y[3] - (5.-3.*c)*y[2]*y[2] - 0.25*(3.-5.*c)*y[2]*y[3] + 0.5*(3.-c)*y[4]
+    else:
+        specindex = (1.0 + y[3]
             - 4.75564*y[2]*y[2]
             - 0.64815*y[2]*y[3]
             + 1.45927*y[4]
@@ -143,7 +153,58 @@ def specindex(y):
             + 0.0725242*y[3]*y[3]*y[3]
             + 5.92913*y[2]*y[4]
             + 0.085369*y[3]*y[4]
-            + 0.290072*y[5]
+            + 0.290072*y[5])
 
-    return result
+    return specindex
+
+def dspecindex(y):
+    ydoub = y.copy()
+
+    dydN = np.zeros(NEQS)
+    dydN = derivs(0, ydoub, dydN)
+
+    y = ydoub.copy()
+
+    if SECONDORDER is True:
+        dspecindex = - (1./(1 - y[2])*
+                     (dydN[3] - 2.*(5.-3.*c)*y[2]*dydN[2]
+                     - 0.25 * (3.-5.*c)*(y[2]*dydN[3]+y[3]*dydN[2])
+                     + 0.5 * (3.0 - c)*dydN[4]))
+    else:
+        dspecindex =  - (1./(1 - y[2])*
+                    (dydN[3]
+                    - 2.0*4.75564*y[2]*dydN[2]
+                    - 0.64815*(y[2]*dydN[3] + dydN[2]*y[3])
+                    + 1.45927*dydN[4]
+                    + 3.0*7.55258*y[2]*y[2]*dydN[2]
+                    + 12.0176*(y[2]*y[2]*dydN[3]+2.0*y[2]*dydN[2]*y[3])
+                    + 3.12145*(2.0*y[2]*y[3]*dydN[3]+dydN[2]*y[3]*y[3])
+                    + 3.0*0.0725242*y[3]*y[3]*dydN[3]
+                    + 5.92913*(y[2]*dydN[4]+dydN[2]*y[4])
+                    + 0.085369*(y[3]*dydN[4]+dydN[3]*y[4])
+                    + 0.290072*dydN[5]))
+
+    return dspecindex
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
