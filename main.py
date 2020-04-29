@@ -18,7 +18,7 @@ NMIN = 0.5
 
 OUTFILE1_NAME = "nr.dat"
 OUTFILE2_NAME = "esigma.dat"
-NUMPOINTS = 20000
+NUMPOINTS = 200
 
 NUMEFOLDSMAX = 60.
 NUMEFOLDSMIN = 46.
@@ -127,13 +127,13 @@ def main():
                 # epsilon, sigma, xsi.
                 asymcount += 1
 
-                outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y),specindex(y),dspecindex(y)))
+                outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
                 outfile1.flush()
 
                 for i in range(NEQS):
-                    outfile2.write("%le\n" % (y[i]))
+                    outfile2.write("%le " % (y[i]))
 
-                outfile2.write("%f\n" % (calc.Nefolds))
+                outfile2.write("\n")
                 outfile2.flush()
 
                 points += 1
@@ -141,11 +141,13 @@ def main():
             else: # Spectral index out of range
                 badncount += 1
         elif calc.ret == "nontrivial":
-            outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y),specindex(y),dspecindex(y)))
+            print("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
+            exit(0)
+            outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
             outfile1.flush()
 
             for i in range(NEQS):
-                outfile2.write("%le\n" % (y[i]))
+                outfile2.write("%le " % (y[i]))
 
             outfile2.write("%f\n" % (calc.Nefolds))
             outfile2.flush()
