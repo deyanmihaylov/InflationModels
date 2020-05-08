@@ -18,7 +18,7 @@ NMIN = 0.5
 
 OUTFILE1_NAME = "nr.dat"
 OUTFILE2_NAME = "esigma.dat"
-NUMPOINTS = 200
+NUMPOINTS = 20000
 
 NUMEFOLDSMAX = 60.
 NUMEFOLDSMIN = 46.
@@ -141,8 +141,6 @@ def main():
             else: # Spectral index out of range
                 badncount += 1
         elif calc.ret == "nontrivial":
-            print("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
-            exit(0)
             outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
             outfile1.flush()
 
@@ -172,12 +170,6 @@ def main():
 
         # print("D", calc.npoints)
         # exit()
-
-
-
-
-
-
 
 if __name__ == "__main__":
     main()

@@ -25,7 +25,7 @@ def int_de(y, N, Nend, kount, kmax, ypp, xpp, NEQS, derivs):
             status = 1
             break
         
-        y = ydoub.copy()
+        for i in range(NEQS): y[i] = ydoub[i]
 
         ypp[:, count] = y
         xpp[count] = N
