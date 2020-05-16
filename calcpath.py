@@ -12,7 +12,7 @@ LOTSOFEFOLDS = 1000.0
 
 c = 0.0814514 # = 4 (ln(2)+\gamma)-5, \gamma = 0.5772156649
 
-def calcpath(Nefolds, y, path, N, count):
+def calcpath(Nefolds, y, path, N, calc):
     retval = "internal_error"
     i = None
     j = None
@@ -42,7 +42,7 @@ def calcpath(Nefolds, y, path, N, count):
     yp = yp[:, 0:kount].copy()
     xp = xp[0:kount].copy()
 
-    y = yp[:, -1].copy()
+    y[:] = yp[:, -1].copy()
 
     if z:
         retval = "internal_error"
@@ -62,7 +62,7 @@ def calcpath(Nefolds, y, path, N, count):
             Nstart = xp[i-2] - xp[i-1]
             Nend = Nefolds
 
-            y = yp[:, i-2].copy()
+            y[:] = yp[:, i-2].copy()
 
             yp = np.zeros((NEQS, kmax), dtype=float, order='C')
             xp = np.zeros(kmax, dtype=float, order='C')
@@ -97,13 +97,22 @@ def calcpath(Nefolds, y, path, N, count):
     # buffers are only filled in if non-null pointers are provided.
 
     if (path is not None) and (N is not None) and (retval != "internal_error") and kount > 1:
-        path = yp.copy()
-        N = xp.copy()
+        N.resize(kount, refcheck=False)
+        path.resize(NEQS, kount, refcheck=False)
+
+        for j in range(kount):
+            N[j] = xp[j]
+
+            for i in range(NEQS):
+                path[i, j] = yp[i, j]
+
         count = kount
     else:
         count = 0
 
-    return retval, y, count  
+    calc.npoints = count
+
+    return retval
 
 def derivs(t, y, dydN):
     dydN = np.zeros(NEQS, dtype=float, order='C')

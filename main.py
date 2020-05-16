@@ -117,7 +117,15 @@ def main():
 
         y = yinit.copy()
 
-        calc.ret, y, calc.npoints = calcpath(calc.Nefolds, y, path, N, calc.npoints)
+        calc.ret = calcpath(calc.Nefolds, y, path, N, calc)
+
+        for i in range(NEQS):
+            for j in range(calc.npoints):
+                print("%.18e "%path[i, j], end="")
+
+            print("\n")
+
+        exit(0)
 
         if calc.ret == "asymptote":
             # Check to see if the spectral index is within the slow roll range
