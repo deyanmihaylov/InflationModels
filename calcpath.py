@@ -39,11 +39,6 @@ def calcpath(Nefolds, y, path, N, calc):
     
     z, kount = int_de(y, Nstart, Nend, kount, kmax, yp, xp, NEQS, derivs)
 
-    yp = yp[:, 0:kount].copy()
-    xp = xp[0:kount].copy()
-
-    y[:] = yp[:, -1].copy()
-
     if z:
         retval = "internal_error"
         z = 0
@@ -51,8 +46,10 @@ def calcpath(Nefolds, y, path, N, calc):
         # Find when epsilon passes through unity
         i = check_convergence(yp, kount)
 
-        if i == 0: # We never found an end to inflation, so we must be at a late-time attractor
-            if y[2] > SMALLNUM or y[3] < 0.: # The system did not evolve to a known asymptote
+        if i == 0:
+            # We never found an end to inflation, so we must be at a late-time attractor
+            if y[2] > SMALLNUM or y[3] < 0.:
+                # The system did not evolve to a known asymptote
                 retval = "noconverge"
             else:
                 retval = "asymptote"
@@ -69,13 +66,11 @@ def calcpath(Nefolds, y, path, N, calc):
 
             z, kount = int_de(y, Nstart, Nend, kount, kmax, yp, xp, NEQS, derivs)
 
-            yp = yp[:, 0:kount].copy()
-            xp = xp[0:kount].copy()
-
             if z:
                 retval = "internal_error"
                 z = 0
             elif check_convergence(yp, kount):
+                # Not enough inflation.
                 retval = "insuff"
             else:
                 retval = "nontrivial"

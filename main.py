@@ -23,6 +23,9 @@ NUMPOINTS = 20000
 NUMEFOLDSMAX = 60.
 NUMEFOLDSMIN = 46.
 
+if SAVEPATHS is True:
+    PRINTEVERY = 100
+
 class Calc:
     def __init__(self):
         self.Y = np.zeros(NEQS, dtype=float, order='C')
@@ -51,11 +54,42 @@ def pick_init_vals ():
     
     return init_vals, init_Nefolds
 
+def we_should_save_this_path(retval, save, pointcount):
+    if ((retval == "asymptote" or retval == "nontrivial") and not(save)):
+        if not(pointcount % PRINTEVERY):
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def save_path(y, N, kount, fname):
+    # Open output file
+    try:
+        outfile = open(fname, "w")
+    except IOError as e:
+        print(f"Could not open file {fname}, errno = {e}.")
+        sys.exit()
+
+    # Output intermediate data from the integration
+    for i in range(kount):
+        for j in range(NEQS):
+            outfile.write("%le " % (y[j, i]))
+
+        outfile.write("%lf " % (N[i]))
+
+        # Calculate "reconstructed" value of the potential, in Planck units.
+        V = (3./(8.*np.pi)) * y[1, i] * y[1, i] * (1.-y[2, i]/3.)
+        outfile.write("%le " % (V))
+        outfile.write("%le\n" % ((V*y[2, i]) / (3.-y[2, i])))
+
+    outfile.close()
+
 def main():
     calc = Calc()
 
     if SPECTRUM is True:
-        # write code for SPECTRUM
+        # initialize SPECTRUM vairables
         pass
 
     try:
@@ -119,14 +153,6 @@ def main():
 
         calc.ret = calcpath(calc.Nefolds, y, path, N, calc)
 
-        for i in range(NEQS):
-            for j in range(calc.npoints):
-                print("%.18e "%path[i, j], end="")
-
-            print("\n")
-
-        exit(0)
-
         if calc.ret == "asymptote":
             # Check to see if the spectral index is within the slow roll range
             if specindex(y) >= NMIN and specindex(y) <= NMAX:
@@ -146,7 +172,8 @@ def main():
 
                 points += 1
                 savedone = 0
-            else: # Spectral index out of range
+            else:
+                # Spectral index out of range
                 badncount += 1
         elif calc.ret == "nontrivial":
             outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
@@ -173,11 +200,40 @@ def main():
             errcount += 1
 
         if SAVEPATHS is True:
-            # Add SAVEPATHS code later
-            pass
+            """
+            Check to see if initial data yielded suitable results for the
+            entire path to be generated and saved.  If so, the initial data
+            are stored in temporary buffers.
+            """
+            if SPECTRUM is True:
+                # if we calc spectrum, we want path
+                # SPECTRUM code here
+                pass
 
-        # print("D", calc.npoints)
-        # exit()
+            if SPECTRUM is False:
+                # if not, choose different criterion
+                criterion = we_should_save_this_path(calc.ret, savedone, points)
+
+            if criterion:
+                if SPECTRUM is True:
+                    """
+                    If we are calculating spectra, we must normalize H here instead
+                    of in calcpath.c.
+                    """
+                    # SPECTRUM code goes here
+
+                fname = f"path{str(outcount).zfill(3)}.dat"
+                outcount += 1
+
+                save_path(path, N, calc.npoints, fname)
+
+                savedone = 1
+
+    print(f"Done. points = {points}, iters = {iters}, errcount = {errcount}")
+    print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+
+    outfile1.close()
+    outfile2.close()
 
 if __name__ == "__main__":
     main()

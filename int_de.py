@@ -27,13 +27,22 @@ def int_de(y, N, Nend, kount, kmax, ypp, xpp, NEQS, derivs):
         
         for i in range(NEQS): y[i] = ydoub[i]
 
-        ypp[:, count] = y
+        ypp[:, count] = y.copy()
         xpp[count] = N
 
         count += 1
 
         if count == kmax:
             break
+
+    ypp_temp = ypp[:, 0:count].copy()
+    xpp_temp = xpp[0:count].copy()
+
+    ypp.resize((NEQS, count), refcheck=False)
+    xpp.resize(count, refcheck=False)
+
+    ypp[:,:] = ypp_temp.copy()
+    xpp[:] = xpp_temp.copy()
 
     kount = count
 
