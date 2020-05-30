@@ -35,7 +35,7 @@ class Calc:
         self.Nefolds = 0.0
 
 
-def pick_init_vals ():
+def pick_init_vals():
     init_vals = np.zeros(NEQS, dtype=float, order='C')
     
     init_vals[0] = 0.0
@@ -60,6 +60,12 @@ def we_should_save_this_path(retval, save, pointcount):
             return True
         else:
             return False
+    else:
+        return False
+
+def we_should_calc_spec(y):
+    if (specindex(y) > 0. and specindex(y) < 1.2):
+        return True
     else:
         return False
 
@@ -89,8 +95,17 @@ def main():
     calc = Calc()
 
     if SPECTRUM is True:
-        # initialize SPECTRUM vairables
-        pass
+        spectrum_status = None
+
+        u_s = np.empty((2, kmax))
+        u_t = np.empty((2, kmax))
+
+        specnum_s = ""
+        specnum_t = ""
+
+        spec_count = 0
+
+        y_final = np.empty(NEQS + 1)
 
     try:
         outfile1 = open(OUTFILE1_NAME, "w")
@@ -190,8 +205,34 @@ def main():
             nontrivcount += 1
 
             if SPECTRUM is True:
-                # Add SPECTRUM part of code here
-                pass
+                if we_should_calc_spec(y):
+                    print(f"Evaluating spectrum {spec_count}")
+
+                    specnum_s = f"spec_s{str(spec_count).zfill(3)}.dat"
+                    specnum_t = f"spec_t{str(spec_count).zfill(3)}.dat"
+
+                    spec_count += 1
+
+                    try:
+                        spec_s = open(specnum_s, "w")
+                    except IOError as e:
+                        print(f"Could not open file {specnum_s}, errno = {e}.")
+                        sys.exit()
+
+                    try:
+                        spec_t = open(specnum_t, "w")
+                    except IOError as e:
+                        print(f"Could not open file {specnum_t}, errno = {e}.")
+                        sys.exit()
+
+                    y_final[:NEQS] = path[:NEQS, 3]
+                    y_final[NEQS+1] = N[3]
+
+                    
+
+
+
+
         elif calc.ret == "insuff":
             insuffcount += 1
         elif calc.ret == "noconverge":
