@@ -5,6 +5,7 @@ from scipy.integrate import solve_ivp
 from MacroDefinitions import *
 from calcpath import *
 from int_de import *
+if SPECTRUM: from spectrum import *
 
 import pygsl.rng
 
@@ -64,7 +65,7 @@ def we_should_save_this_path(retval, save, pointcount):
         return False
 
 def we_should_calc_spec(y):
-    if (specindex(y) > 0. and specindex(y) < 1.2):
+    if (specindex(y) > 0.8 and specindex(y) < 1.2):
         return True
     else:
         return False
@@ -162,7 +163,9 @@ def main():
             else:
                 print(".", end="")
 
-        yinit, calc.Nefolds = pick_init_vals()
+        # yinit, calc.Nefolds = pick_init_vals()
+        yinit = np.array([ 0.00000000e+00,  1.00000000e+00,  1.43771215e-01, -3.32423352e-01, 1.56558977e-02, 2.36545233e-03, 2.21399894e-03, -1.73317876e-04])
+        calc.Nefolds = 52.231928370566685
 
         y = yinit.copy()
 
@@ -226,9 +229,11 @@ def main():
                         sys.exit()
 
                     y_final[:NEQS] = path[:NEQS, 3]
-                    y_final[NEQS+1] = N[3]
+                    y_final[NEQS] = N[3]
 
-                    
+                    spectrum_status = spectrum(y_final, y, u_s, u_t, calc.Nefolds, derivs1, scalarsys, tensorsys)
+
+
 
 
 
@@ -248,8 +253,7 @@ def main():
             """
             if SPECTRUM is True:
                 # if we calc spectrum, we want path
-                # SPECTRUM code here
-                pass
+                criterion = we_should_calc_spec(y) and calc.ret == "nontrivial"
 
             if SPECTRUM is False:
                 # if not, choose different criterion

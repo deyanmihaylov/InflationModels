@@ -1,10 +1,15 @@
 import numpy as np
+import pygsl.odeiv as odeiv
+import pygsl.spline as spline
+
+from calcpath import *
 
 knos = 1575 # total number of k-values to evaluate
 kinos = 214 # total number of k-values to use for integration
 k_file = "ks_eval.dat" # file containing k-values at which to evaluate spectrum
 ki_file = "ks.dat" # file containing k-values for integration
 Y = 50 # Y = value of k/aH at which to initialize mode fcns
+VERYSMALLNUM = 1.E-18
 
 class params:
     def __init__(self):
@@ -125,12 +130,12 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     largest scale fluctuations in the BD limlt.
     """
 
-    ydoub[:] = y_final[:].copy()
+    ydoub[:] = y_final[:NEQS].copy()
     N = y_final[NEQS]
     Nfinal = N
 
-    while (kis[0]*5.41e-58) / ((spec_params.a_init)*(np.exp(-N))*(ydoub[1])) < Y:
-        flowback[:, countback] = ydoub[:].copy()
+    while (kis[0]*5.41e-58) / (spec_params.a_init*np.exp(-N)*ydoub[1]) < Y:
+        flowback[:, countback] = ydoub[:5].copy()
 
         Nefoldsback[countback] = N
 
@@ -144,28 +149,142 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
 
     Nefoldsback[countback] = N
 
-    flowback[:, countback] = ydoub[:].copy()
+    flowback[:, countback] = ydoub[:5].copy()
 
     H = np.empty(countback+1)
     eps = np.empty(countback+1)
     sig = np.empty(countback+1)
     xi = np.empty(countback+1)
-    Nefolds = np.empty(kmax)
+    # Nefolds = np.empty(kmax)
+    Nefolds = np.empty(countback+1)
     phi = np.empty(countback+1)
 
-    H[:] = flowback[1, :].copy()
-    eps[:] = flowback[2, :].copy()
-    sig[:] = flowback[3, :].copy()
-    xi[:] = flowback[4, :].copy()
-    phi[:] = flowback[0, :].copy()
-    Nefolds[:] = Nefoldsback[:].copy()
+    H[:] = flowback[1, :countback+1].copy()
+    eps[:] = flowback[2, :countback+1].copy()
+    sig[:] = flowback[3, :countback+1].copy()
+    xi[:] = flowback[4, :countback+1].copy()
+    phi[:] = flowback[0, :countback+1].copy()
+    Nefolds[:] = Nefoldsback[:countback+1].copy()
 
     # Generate interpolating functions for H, eps, sig, xi and phi (for path gen. only)
+    spline1 = spline.cspline(countback+1)
+    spline1.init(Nefolds, H)
+
+    spline2 = spline.cspline(countback+1)
+    spline2.init(Nefolds, eps)
+
+    spline3 = spline.cspline(countback+1)
+    spline3.init(Nefolds, sig)
+
+    spline4 = spline.cspline(countback+1)
+    spline4.init(Nefolds, xi)
+
+    spline0 = spline.cspline(countback+1)
+    spline0.init(Nefolds, phi)
     
+    h2 = -h2
+
+    """
+    Find scalar spectra first.
+    """
+    for m in range(kinos):
+        kis[m] *= 5.41e-58 # converts to Planck from hMpc^-1
+        N = Ninit
+        ydoub[1] = spline1.eval(N)
+        ydoub[2] = spline2.eval(N)
+        count = 0
+
+        """
+        First, check to see if the given k value is in the
+        Bunch-Davies limit at the start of inflation.  This limit is
+        set by the #define Y=k/aH.  If the given k value yields a
+        larger Y than the BD limit, then we must integrate forward
+        (to smaller N) until we reach the proper value for Y.  If it is
+        smaller, we must integrate backwards (to larger N).  These
+        integrators are given a fixed stepsize to ensure that we don't
+        inadvertently step too far beyond Y.
+        """
+
+        if k/1.73e-61 > Y: # 1.73e-61 is the present Hubble radius (~3.2e-4 hMpc^-1) in Planck units
+            while k / (spec_params.a_init*np.exp(-N)*ydoub[1]*(1-ydoub[2])) > Y:
+                N += -0.01
+                ydoub[1] = spline1.eval(N)
+                ydoub[2] = spline2.eval(N)
+        else
+            while k / (spec_params.a_init*np.exp(-N)*ydoub[1]*(1-ydoub[2])) < Y:
+                N += 0.01
+                ydoub[1] = spline1.eval(N)
+                ydoub[2] = spline2.eval(N)
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def derivs1(t, y, dydN):
+    dydN = np.zeros(NEQS, dtype=float, order='C')
+    
+    if y[2] > VERYSMALLNUM:
+        dydN[0]= - np.sqrt(y[2]/(4*np.pi))
+    else:
+        dydN[0] = 0.
+
+    dydN[1] = y[1] * y[2]
+    dydN[2] = y[2] * (y[3]+2.*y[2])
+    dydN[3] = 2.*y[4] - 5.*y[2]*y[3] - 12.*y[2]*y[2]
+    
+    for i in range(4, NEQS-1):
+         dydN[i] = (0.5*(i-3)*y[3]+(i-4)*y[2])*y[i] + y[i+1]
+
+    dydN[NEQS-1] = (0.5*(NEQS-4)*y[3]+(NEQS-5)*y[2]) * y[NEQS-1]
+
+    return dydN
+
+def scalarsys(t, y, dydN, parameters):
+    p = params()
+    p = parameters
+
+    dydN[0] = y[1]
+    dydN[1] = (1-p.eps)*y[1] - (((p.k)*(p.k))/((p.a_init)*(p.a_init)*np.exp(-2.*t)*(p.H)*(p.H))-2.*(1.-2.*(p.eps)-0.75*(p.sig) - (p.eps)*(p.eps) + 0.125*(p.sig)*(p.sig) + 0.5*(p.xi)))*y[0]
+
+def tensorsys(t, y, dydN, parameters):
+    p = params()
+    p = parameters
+
+    dydN[0] = y[1]
+    dydN[1] = (1-p.eps)*y[1] - (((p.k)*(p.k))/((p.a_init)*(p.a_init)*np.exp(-2.*t)*(p.H)*(p.H))-(2.-p.eps))*y[0]
 
 
 

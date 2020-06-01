@@ -1,4 +1,4 @@
-SPECTRUM = False
+SPECTRUM = True
 
 SECONDORDER = True
 

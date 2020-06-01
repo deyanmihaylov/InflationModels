@@ -116,7 +116,7 @@ def derivs(t, y, dydN):
         dydN = np.zeros(NEQS , dtype=float , order='C')
     else:
         if y[2] > VERYSMALLNUM:
-            dydN[0] = - np.sqrt(y[2] / (4 * np.pi ))
+            dydN[0] = - np.sqrt(y[2] / (4 * np.pi))
         else:
             dydN[0] = 0.0
         
