@@ -216,6 +216,12 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
                 ydoub[1] = spline1.eval(N)
                 ydoub[2] = spline2.eval(N)
 
+        spec_params.k = k
+        nu = (3.-spline2.eval(N)) / (2.*(1.-spline2.eval(N)))
+        Yeff = k / (spec_params.a_init*(np.exp(-N)*(spline1.eval(N)*(1.-spline2.eval(N)))))
+
+        
+
 
 
 
