@@ -1,6 +1,7 @@
 import numpy as np
 import pygsl.odeiv as odeiv
 import pygsl.spline as spline
+from pygsl.testing import _ufuncs
 
 from calcpath import *
 
@@ -188,7 +189,8 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     Find scalar spectra first.
     """
     for m in range(kinos):
-        kis[m] *= 5.41e-58 # converts to Planck from hMpc^-1
+        k = kis[m] * 5.41e-58 # converts to Planck from hMpc^-1
+        kis[m] = k
         N = Ninit
         ydoub[1] = spline1.eval(N)
         ydoub[2] = spline2.eval(N)
@@ -204,13 +206,12 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         integrators are given a fixed stepsize to ensure that we don't
         inadvertently step too far beyond Y.
         """
-
         if k/1.73e-61 > Y: # 1.73e-61 is the present Hubble radius (~3.2e-4 hMpc^-1) in Planck units
             while k / (spec_params.a_init*np.exp(-N)*ydoub[1]*(1-ydoub[2])) > Y:
                 N += -0.01
                 ydoub[1] = spline1.eval(N)
                 ydoub[2] = spline2.eval(N)
-        else
+        else:
             while k / (spec_params.a_init*np.exp(-N)*ydoub[1]*(1-ydoub[2])) < Y:
                 N += 0.01
                 ydoub[1] = spline1.eval(N)
@@ -220,44 +221,190 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         nu = (3.-spline2.eval(N)) / (2.*(1.-spline2.eval(N)))
         Yeff = k / (spec_params.a_init*(np.exp(-N)*(spline1.eval(N)*(1.-spline2.eval(N)))))
 
+        if spline2.eval(N) < 1.:
+            ru_init = realu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
+            dru_init = realu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
+            diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+        else:
+            ru_init = realu_init[0] = -0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
+            dru_init = realu_init[1] = -0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
+            diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+
+        """
+        Solve for real part of u first.
+        """
+        while N > Nfinal:
+            realu_s[count] = realu_init[0] * realu_init[0]
+            Nefolds[count] = N
+
+            spec_params.H = spline1.eval(N)
+            spec_params.eps = spline2.eval(N)
+            spec_params.sig = spline3.eval(N)
+            spec_params.xi = spline4.eval(N)
+            Phi = spline0.eval(N)
+
+            s2 = odeiv.step_rkf45(2, scalarsys, spec_params)
+            c2 = odeiv.control_y_new(s2, abserr2, relerr2)
+            e2 = odeiv.evolve(s2, c2, 2) # mode eqs
+            
+            try:
+                N, h2, realu_init = e2.apply(N, 0, h2, realu_init)
+            except:
+                status = 0
+                return status
+
+            if count+1 == kmax:
+                status = 0
+                return status
+
+        realu_s[count] = realu_init[0] * realu_init[0]
+        Nefolds[count] = N
+
+        for j in range(count+1):
+            Nordered[j] = Nefolds[count-j]
+            uordered_s[j] = realu_s[count-j]
+
+        """
+        Generate interpolating function for realu(N)
+        """
+        spline5 = spline.cspline(count+1)
+        spline5.init(Nordered, uordered_s)
+
+        """
+        Imaginary part
+        """
+        count = 0
+        N = Nefolds[0]
+
+        while N > Nfinal:
+            imu_s[count] = imu_init[0] * imu_init[0]
+            Nefolds[count] = N
+
+            spec_params.H = spline1.eval(N)
+            spec_params.eps = spline2.eval(N)
+            spec_params.sig = spline3.eval(N)
+            spec_params.xi = spline4.eval(N)
+
+            s2 = odeiv.step_rkf45(2, scalarsys, spec_params)
+            c2 = odeiv.control_y_new(s2, abserr2, relerr2)
+            e2 = odeiv.evolve(s2, c2, 2) # mode eqs
+            
+            try:
+                N, h2, imu_init = e2.apply(N, 0, h2, imu_init)
+            except:
+                status = 0
+                return status
+
+            if count+1 == kmax:
+                status = 0
+                return status
+
+        imu_s[count] = imu_init[0] * imu_init[0]
+        Nefolds[count] = N
+        count -= 1
+
+        P_s[m] = (k**3./(2.*(np.pi**2.))) * (spline5(Nefolds[count])+imu_s[count]) / ((spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])*spline2(Nefolds[count]))/(4*np.pi))
+
+        """
+        Tensor spectra
+        """
+        count = 0
         
+        N = Nefolds[0]
+        realu_init[0] = ru_init
+        realu_init[1] = dru_init
 
+        while N > Nfinal:
+            realu_t[count] = realu_init[0] * realu_init[0]
+            Nefolds[count] = N
 
+            spec_params.H = spline1.eval(N)
+            spec_params.eps = spline2.eval(N)
 
+            s2 = odeiv.step_rkf45(2, tensorsys, spec_params)
+            c2 = odeiv.control_y_new(s2, abserr2, relerr2)
+            e2 = odeiv.evolve(s2, c2, 2) # mode eqs
+            
+            try:
+                N, h2, realu_init = e2.apply(N, 0, h2, realu_init)
+            except:
+                status = 0
+                return status
 
+            if count+1 == kmax:
+                status = 0
+                return status
+        
+        realu_t[count] = realu_init[0] * realu_init[0]
+        Nefolds[count] = N
 
+        for j in range(count+1):
+            Nordered[j] = Nefolds[count-j]
+            uordered_t[j] = realu_t[count-j]
 
+        spline7 = spline.cspline(count+1)
+        spline7.init(Nordered, uordered_t)
 
+        """
+        Imaginary part
+        """
+        count = 0
 
+        N = Nefolds[0]
+        imu_init[0] = iu_init
+        imu_init[1] = diu_init
 
+        while N > Nfinal:
+            imu_t[count] = imu_init[0] * imu_init[0]
+            Nefolds[count] = N
 
+            spec_params.H = spline1.eval(N)
+            spec_params.eps = spline2.eval(N)
 
+            s2 = odeiv.step_rkf45(2, tensorsys, spec_params)
+            c2 = odeiv.control_y_new(s2, abserr2, relerr2)
+            e2 = odeiv.evolve(s2, c2, 2) # mode eqs
+            
+            try:
+                N, h2, imu_init = e2.apply(N, 0, h2, imu_init)
+            except:
+                status = 0
+                return status
 
+            if count+1 == kmax:
+                status = 0
+                return status
 
+        imu_t[count] = imu_init[0] * imu_init[0]
+        Nefolds[count] = N
+        count -= 1
 
+        P_t[m] = 64. * np.pi * (k**3./(2.*np.pi**2.)) * (spline7.eval(Nefolds[count])+imu_t[count]) / ((spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])))
 
+        if kis[m] == knorm * 5.41e-58: # normalize here
+            spec_norm = Amp / (P_s[m]+P_t[m])
 
+        y[1] = np.sqrt(spec_norm) # normalize H for later recon
 
+    """
+    Now that we have finished calculating the spectra, interpolate each spectrum and evaluate at k-values of interest
+    """
+    spline8 = spline.cspline(kinos)
+    spline8.init(kis, P_t)
 
+    spline6 = spline.cspline(kinos)
+    spline6.init(kis, P_s)
 
+    for i in range(knos):
+        u_s[0, i] = ks[i]
+        u_s[1, i] = spec_norm * spline6(ks[i]*5.41e-58)
 
+        u_t[0, i] = ks[i]
+        u_t[1, i] = spec_norm * spline8(ks[i]*5.41e-58)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return status
 
 def derivs1(t, y, dydN):
     dydN = np.zeros(NEQS, dtype=float, order='C')
@@ -285,6 +432,8 @@ def scalarsys(t, y, dydN, parameters):
     dydN[0] = y[1]
     dydN[1] = (1-p.eps)*y[1] - (((p.k)*(p.k))/((p.a_init)*(p.a_init)*np.exp(-2.*t)*(p.H)*(p.H))-2.*(1.-2.*(p.eps)-0.75*(p.sig) - (p.eps)*(p.eps) + 0.125*(p.sig)*(p.sig) + 0.5*(p.xi)))*y[0]
 
+    return dydN
+
 def tensorsys(t, y, dydN, parameters):
     p = params()
     p = parameters
@@ -292,33 +441,4 @@ def tensorsys(t, y, dydN, parameters):
     dydN[0] = y[1]
     dydN[1] = (1-p.eps)*y[1] - (((p.k)*(p.k))/((p.a_init)*(p.a_init)*np.exp(-2.*t)*(p.H)*(p.H))-(2.-p.eps))*y[0]
 
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return dydN

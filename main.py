@@ -163,9 +163,9 @@ def main():
             else:
                 print(".", end="")
 
-        # yinit, calc.Nefolds = pick_init_vals()
-        yinit = np.array([ 0.00000000e+00,  1.00000000e+00,  1.43771215e-01, -3.32423352e-01, 1.56558977e-02, 2.36545233e-03, 2.21399894e-03, -1.73317876e-04])
-        calc.Nefolds = 52.231928370566685
+        yinit, calc.Nefolds = pick_init_vals()
+        # yinit = np.array([ 0.00000000e+00,  1.00000000e+00,  1.43771215e-01, -3.32423352e-01, 1.56558977e-02, 2.36545233e-03, 2.21399894e-03, -1.73317876e-04])
+        # calc.Nefolds = 52.231928370566685
 
         y = yinit.copy()
 
@@ -282,14 +282,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
