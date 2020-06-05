@@ -236,13 +236,6 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
             diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
 
-        print("%.18e" % ru_init)
-        print("%.18e" % dru_init)
-        print("%.18e" % iu_init)
-        print("%.18e" % diu_init)
-
-        exit()
-
         """
         Solve for real part of u first.
         """
@@ -320,13 +313,10 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             if count == kmax:
                 status = 0
                 return status
-        
-        exit()
 
         imu_s[count] = imu_init[0] * imu_init[0]
-
-        count -= 1
         Nefolds[count] = N
+        count -= 1
 
         P_s[m] = (k**3./(2.*(np.pi**2.))) * (spline5.eval(Nefolds[count])+imu_s[count]) / ((spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])*spline2.eval(Nefolds[count]))/(4*np.pi))
 

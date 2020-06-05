@@ -166,8 +166,8 @@ def main():
         yinit, calc.Nefolds = pick_init_vals()
 
         # remove when spectrum code is finished
-        if iters < 121:
-            continue
+        # if iters < 121:
+        #     continue
 
         y = yinit.copy()
 
