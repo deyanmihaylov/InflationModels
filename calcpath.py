@@ -87,8 +87,8 @@ def calcpath(Nefolds, y, path, N, calc):
             yp[1, :] = Hnorm * yp[1, :]
             yp[0, :] = yp[0, :] - y[0]
 
-    # Fill in return buffers with path info.  Note that the calling
-    # function is responsible for freeing these buffers!  The
+    # Fill in return buffers with path info. Note that the calling
+    # function is responsible for freeing these buffers! The
     # buffers are only filled in if non-null pointers are provided.
 
     if (path is not None) and (N is not None) and (retval != "internal_error") and kount > 1:

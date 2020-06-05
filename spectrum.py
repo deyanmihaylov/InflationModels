@@ -10,6 +10,9 @@ kinos = 214 # total number of k-values to use for integration
 k_file = "ks_eval.dat" # file containing k-values at which to evaluate spectrum
 ki_file = "ks.dat" # file containing k-values for integration
 Y = 50 # Y = value of k/aH at which to initialize mode fcns
+knorm = 0.05 # normalization scale
+Amp = 2.0803249e-9 # scalar amplitude at knorm
+
 VERYSMALLNUM = 1.E-18
 
 class params:
@@ -130,7 +133,6 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     Integrate backwards from end of inflation to the earliest time needed in order to initialize the
     largest scale fluctuations in the BD limlt.
     """
-
     ydoub[:] = y_final[:NEQS].copy()
     N = y_final[NEQS]
     Nfinal = N
@@ -145,6 +147,8 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         except:
             status = 0
             return status
+        else:
+            status = 0
 
         countback += 1
 
@@ -156,8 +160,8 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     eps = np.empty(countback+1)
     sig = np.empty(countback+1)
     xi = np.empty(countback+1)
-    # Nefolds = np.empty(kmax)
-    Nefolds = np.empty(countback+1)
+    Nefolds = np.empty(kmax)
+    # Nefolds = np.empty(countback+1)
     phi = np.empty(countback+1)
 
     H[:] = flowback[1, :countback+1].copy()
@@ -165,23 +169,23 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     sig[:] = flowback[3, :countback+1].copy()
     xi[:] = flowback[4, :countback+1].copy()
     phi[:] = flowback[0, :countback+1].copy()
-    Nefolds[:] = Nefoldsback[:countback+1].copy()
+    Nefolds[:countback+1] = Nefoldsback[:countback+1].copy()
 
     # Generate interpolating functions for H, eps, sig, xi and phi (for path gen. only)
     spline1 = spline.cspline(countback+1)
-    spline1.init(Nefolds, H)
+    spline1.init(Nefolds[:countback+1], H)
 
     spline2 = spline.cspline(countback+1)
-    spline2.init(Nefolds, eps)
+    spline2.init(Nefolds[:countback+1], eps)
 
     spline3 = spline.cspline(countback+1)
-    spline3.init(Nefolds, sig)
+    spline3.init(Nefolds[:countback+1], sig)
 
     spline4 = spline.cspline(countback+1)
-    spline4.init(Nefolds, xi)
+    spline4.init(Nefolds[:countback+1], xi)
 
     spline0 = spline.cspline(countback+1)
-    spline0.init(Nefolds, phi)
+    spline0.init(Nefolds[:countback+1], phi)
     
     h2 = -h2
 
@@ -224,17 +228,27 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         if spline2.eval(N) < 1.:
             ru_init = realu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
             dru_init = realu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
-            iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
-            diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Ynu(nu, Yeff)
+            diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Ynu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
         else:
-            ru_init = realu_init[0] = -0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
-            dru_init = realu_init[1] = -0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            ru_init = realu_init[0] = -0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Ynu(nu, Yeff)
+            dru_init = realu_init[1] = -0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Ynu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
             iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
             diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+
+        print("%.18e" % ru_init)
+        print("%.18e" % dru_init)
+        print("%.18e" % iu_init)
+        print("%.18e" % diu_init)
+
+        exit()
 
         """
         Solve for real part of u first.
         """
+        s2 = odeiv.step_rkf45(2, scalarsys, args=spec_params)
+        c2 = odeiv.control_y_new(s2, abserr2, relerr2)
+
         while N > Nfinal:
             realu_s[count] = realu_init[0] * realu_init[0]
             Nefolds[count] = N
@@ -245,8 +259,6 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             spec_params.xi = spline4.eval(N)
             Phi = spline0.eval(N)
 
-            s2 = odeiv.step_rkf45(2, scalarsys, spec_params)
-            c2 = odeiv.control_y_new(s2, abserr2, relerr2)
             e2 = odeiv.evolve(s2, c2, 2) # mode eqs
             
             try:
@@ -254,8 +266,12 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             except:
                 status = 0
                 return status
+            else:
+                status = 0
 
-            if count+1 == kmax:
+            count += 1
+            
+            if count == kmax:
                 status = 0
                 return status
 
@@ -270,13 +286,17 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         Generate interpolating function for realu(N)
         """
         spline5 = spline.cspline(count+1)
-        spline5.init(Nordered, uordered_s)
+        spline5.init(Nordered[:count+1], uordered_s[:count+1])
 
         """
         Imaginary part
         """
         count = 0
         N = Nefolds[0]
+
+        s2 = odeiv.step_rkf45(2, scalarsys, args=spec_params)
+        c2 = odeiv.control_y_new(s2, abserr2, relerr2)
+        e2 = odeiv.evolve(s2, c2, 2) # mode eqs
 
         while N > Nfinal:
             imu_s[count] = imu_init[0] * imu_init[0]
@@ -286,26 +306,29 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             spec_params.eps = spline2.eval(N)
             spec_params.sig = spline3.eval(N)
             spec_params.xi = spline4.eval(N)
-
-            s2 = odeiv.step_rkf45(2, scalarsys, spec_params)
-            c2 = odeiv.control_y_new(s2, abserr2, relerr2)
-            e2 = odeiv.evolve(s2, c2, 2) # mode eqs
             
             try:
                 N, h2, imu_init = e2.apply(N, 0, h2, imu_init)
             except:
                 status = 0
                 return status
+            else:
+                status = 0
 
-            if count+1 == kmax:
+            count += 1
+
+            if count == kmax:
                 status = 0
                 return status
+        
+        exit()
 
         imu_s[count] = imu_init[0] * imu_init[0]
-        Nefolds[count] = N
-        count -= 1
 
-        P_s[m] = (k**3./(2.*(np.pi**2.))) * (spline5(Nefolds[count])+imu_s[count]) / ((spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])*spline2(Nefolds[count]))/(4*np.pi))
+        count -= 1
+        Nefolds[count] = N
+
+        P_s[m] = (k**3./(2.*(np.pi**2.))) * (spline5.eval(Nefolds[count])+imu_s[count]) / ((spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])*spline2.eval(Nefolds[count]))/(4*np.pi))
 
         """
         Tensor spectra
@@ -316,6 +339,9 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         realu_init[0] = ru_init
         realu_init[1] = dru_init
 
+        s2 = odeiv.step_rkf45(2, tensorsys, args=spec_params)
+        c2 = odeiv.control_y_new(s2, abserr2, relerr2)
+
         while N > Nfinal:
             realu_t[count] = realu_init[0] * realu_init[0]
             Nefolds[count] = N
@@ -323,8 +349,6 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             spec_params.H = spline1.eval(N)
             spec_params.eps = spline2.eval(N)
 
-            s2 = odeiv.step_rkf45(2, tensorsys, spec_params)
-            c2 = odeiv.control_y_new(s2, abserr2, relerr2)
             e2 = odeiv.evolve(s2, c2, 2) # mode eqs
             
             try:
@@ -332,8 +356,12 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             except:
                 status = 0
                 return status
+            else:
+                status = 0
 
-            if count+1 == kmax:
+            count += 1
+
+            if count == kmax:
                 status = 0
                 return status
         
@@ -345,7 +373,7 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             uordered_t[j] = realu_t[count-j]
 
         spline7 = spline.cspline(count+1)
-        spline7.init(Nordered, uordered_t)
+        spline7.init(Nordered[:count+1], uordered_t[:count+1])
 
         """
         Imaginary part
@@ -356,6 +384,9 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         imu_init[0] = iu_init
         imu_init[1] = diu_init
 
+        s2 = odeiv.step_rkf45(2, tensorsys, args=spec_params)
+        c2 = odeiv.control_y_new(s2, abserr2, relerr2)
+
         while N > Nfinal:
             imu_t[count] = imu_init[0] * imu_init[0]
             Nefolds[count] = N
@@ -363,8 +394,6 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             spec_params.H = spline1.eval(N)
             spec_params.eps = spline2.eval(N)
 
-            s2 = odeiv.step_rkf45(2, tensorsys, spec_params)
-            c2 = odeiv.control_y_new(s2, abserr2, relerr2)
             e2 = odeiv.evolve(s2, c2, 2) # mode eqs
             
             try:
@@ -372,8 +401,12 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             except:
                 status = 0
                 return status
+            else:
+                status = 0
 
-            if count+1 == kmax:
+            count += 1
+
+            if count == kmax:
                 status = 0
                 return status
 
@@ -386,7 +419,11 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         if kis[m] == knorm * 5.41e-58: # normalize here
             spec_norm = Amp / (P_s[m]+P_t[m])
 
-        y[1] = np.sqrt(spec_norm) # normalize H for later recon
+            """
+            This is a little different from the C code,
+            because the y[1] change is outside the if statement
+            """
+            y[1] = np.sqrt(spec_norm) # normalize H for later recon
 
     """
     Now that we have finished calculating the spectra, interpolate each spectrum and evaluate at k-values of interest
@@ -399,10 +436,10 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
 
     for i in range(knos):
         u_s[0, i] = ks[i]
-        u_s[1, i] = spec_norm * spline6(ks[i]*5.41e-58)
+        u_s[1, i] = spec_norm * spline6.eval(ks[i]*5.41e-58)
 
         u_t[0, i] = ks[i]
-        u_t[1, i] = spec_norm * spline8(ks[i]*5.41e-58)
+        u_t[1, i] = spec_norm * spline8.eval(ks[i]*5.41e-58)
 
     return status
 
@@ -425,7 +462,9 @@ def derivs1(t, y, dydN):
 
     return dydN
 
-def scalarsys(t, y, dydN, parameters):
+def scalarsys(t, y, parameters):
+    dydN = np.empty(2)
+
     p = params()
     p = parameters
 
@@ -434,7 +473,9 @@ def scalarsys(t, y, dydN, parameters):
 
     return dydN
 
-def tensorsys(t, y, dydN, parameters):
+def tensorsys(t, y, parameters):
+    dydN = np.empty(2)
+
     p = params()
     p = parameters
 

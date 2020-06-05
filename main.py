@@ -19,7 +19,7 @@ NMIN = 0.5
 
 OUTFILE1_NAME = "nr.dat"
 OUTFILE2_NAME = "esigma.dat"
-NUMPOINTS = 20000
+NUMPOINTS = 200
 
 NUMEFOLDSMAX = 60.
 NUMEFOLDSMIN = 46.
@@ -164,8 +164,10 @@ def main():
                 print(".", end="")
 
         yinit, calc.Nefolds = pick_init_vals()
-        # yinit = np.array([ 0.00000000e+00,  1.00000000e+00,  1.43771215e-01, -3.32423352e-01, 1.56558977e-02, 2.36545233e-03, 2.21399894e-03, -1.73317876e-04])
-        # calc.Nefolds = 52.231928370566685
+
+        # remove when spectrum code is finished
+        if iters < 121:
+            continue
 
         y = yinit.copy()
 
@@ -233,10 +235,16 @@ def main():
 
                     spectrum_status = spectrum(y_final, y, u_s, u_t, calc.Nefolds, derivs1, scalarsys, tensorsys)
 
+                    if spectrum_status:
+                        errcount += 1
 
+                    # Here is where the spectrum files are written. Choose desired format.
+                    for i in range(knos):
+                        spec_s.write("%.15e %.15e\n" % (u_s[0, i], u_s[1, i]))
+                        spec_t.write("%.15e %.15e\n" % (u_t[0, i], u_t[1, i]))
 
-
-
+                    spec_s.close()
+                    spec_t.close()
 
         elif calc.ret == "insuff":
             insuffcount += 1
@@ -265,7 +273,9 @@ def main():
                     If we are calculating spectra, we must normalize H here instead
                     of in calcpath.c.
                     """
-                    # SPECTRUM code goes here
+                    for j in range(calc.npoints):
+                        path[0, j] = path[0, j] - path[0, calc.npoints-1]
+                        path[1, j] = path[1, j] * y[1]
 
                 fname = f"path{str(outcount).zfill(3)}.dat"
                 outcount += 1
