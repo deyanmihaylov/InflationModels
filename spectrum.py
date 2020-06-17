@@ -223,7 +223,9 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
 
         spec_params.k = k
         nu = (3.-spline2.eval(N)) / (2.*(1.-spline2.eval(N)))
+        print(nu)
         Yeff = k / (spec_params.a_init*(np.exp(-N)*(spline1.eval(N)*(1.-spline2.eval(N)))))
+        print(Yeff)
 
         if spline2.eval(N) < 1.:
             ru_init = realu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
