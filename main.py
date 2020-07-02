@@ -155,6 +155,7 @@ def main():
 
     while nontrivcount < NUMPOINTS:
         iters += 1
+        print(iters)
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
@@ -218,17 +219,17 @@ def main():
 
                     spec_count += 1
 
-                    try:
-                        spec_s = open(specnum_s, "w")
-                    except IOError as e:
-                        print(f"Could not open file {specnum_s}, errno = {e}.")
-                        sys.exit()
+                    # try:
+                    #     spec_s = open(specnum_s, "w")
+                    # except IOError as e:
+                    #     print(f"Could not open file {specnum_s}, errno = {e}.")
+                    #     sys.exit()
 
-                    try:
-                        spec_t = open(specnum_t, "w")
-                    except IOError as e:
-                        print(f"Could not open file {specnum_t}, errno = {e}.")
-                        sys.exit()
+                    # try:
+                    #     spec_t = open(specnum_t, "w")
+                    # except IOError as e:
+                    #     print(f"Could not open file {specnum_t}, errno = {e}.")
+                    #     sys.exit()
 
                     y_final[:NEQS] = path[:NEQS, 3]
                     y_final[NEQS] = N[3]
@@ -239,12 +240,15 @@ def main():
                         errcount += 1
 
                     # Here is where the spectrum files are written. Choose desired format.
-                    for i in range(knos):
-                        spec_s.write("%.15e %.15e\n" % (u_s[0, i], u_s[1, i]))
-                        spec_t.write("%.15e %.15e\n" % (u_t[0, i], u_t[1, i]))
+                    # for i in range(knos):
+                    #     spec_s.write("%.15e %.15e\n" % (u_s[0, i], u_s[1, i]))
+                    #     spec_t.write("%.15e %.15e\n" % (u_t[0, i], u_t[1, i]))
 
-                    spec_s.close()
-                    spec_t.close()
+                    np.savetxt(specnum_s, u_s[:,0:knos], fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
+                    np.savetxt(specnum_t, u_t[:,0:knos], fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
+
+                    # spec_s.close()
+                    # spec_t.close()
 
         elif calc.ret == "insuff":
             insuffcount += 1
