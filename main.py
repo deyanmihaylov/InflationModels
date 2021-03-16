@@ -244,8 +244,8 @@ def main():
                     #     spec_s.write("%.15e %.15e\n" % (u_s[0, i], u_s[1, i]))
                     #     spec_t.write("%.15e %.15e\n" % (u_t[0, i], u_t[1, i]))
 
-                    np.savetxt(specnum_s, u_s[:,0:knos], fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
-                    np.savetxt(specnum_t, u_t[:,0:knos], fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
+                    np.savetxt(specnum_s, u_s[:,0:knos].T, fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
+                    np.savetxt(specnum_t, u_t[:,0:knos].T, fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
 
                     # spec_s.close()
                     # spec_t.close()
@@ -287,6 +287,9 @@ def main():
                 save_path(path, N, calc.npoints, fname)
 
                 savedone = 1
+
+            if spec_count > 0:
+                exit()
 
     print(f"Done. points = {points}, iters = {iters}, errcount = {errcount}")
     print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
