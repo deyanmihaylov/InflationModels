@@ -5,7 +5,6 @@ from MacroDefinitions import *
 
 def int_de(y, N, Nend, kount, kmax, ypp, xpp, NEQS, derivs):
     h = 1e-6
-    i = None
     status = 0
     count = 0
 
