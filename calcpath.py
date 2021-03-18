@@ -12,7 +12,13 @@ LOTSOFEFOLDS = 1000.0
 
 c = 0.0814514 # = 4 (ln(2)+\gamma)-5, \gamma = 0.5772156649
 
-def calcpath(Nefolds, y, path, N, calc):
+def calcpath(
+    Nefolds,
+    y,
+    path,
+    N,
+    calc,
+):
     retval = "internal_error"
     # i = None
     # j = None
@@ -127,18 +133,22 @@ def derivs(
     return dydN
 
 def check_convergence(
-    y
+    y,
 ) -> int:
     i = np.argmax(y[2, :] >= 1)
 
     return i
 
-def tsratio(y):
-    tsratio = 16 * y[2] * (1.-c*(y[3]+2.*y[2]))
+def tsratio(
+    y,
+):
+    tsratio = 16 * y[2] * (1-c*(y[3]+2*y[2]))
 
     return tsratio
 
-def specindex(y):
+def specindex(
+    y,
+):
     if SECONDORDER is True:
         specindex = (
             1
@@ -164,31 +174,35 @@ def specindex(y):
 
     return specindex
 
-def dspecindex(y):
-    ydoub = y.copy()
-
-    dydN = np.zeros(NEQS)
-    dydN = derivs(0, ydoub, dydN)
-
-    y = ydoub.copy()
+def dspecindex(
+    y,
+):
+    dydN = derivs(0, y)
 
     if SECONDORDER is True:
-        dspecindex = - (1./(1 - y[2])*
-                     (dydN[3] - 2.*(5.-3.*c)*y[2]*dydN[2]
-                     - 0.25 * (3.-5.*c)*(y[2]*dydN[3]+y[3]*dydN[2])
-                     + 0.5 * (3.0 - c)*dydN[4]))
+        dspecindex = - (
+            1/(1 - y[2])*(
+                dydN[3]
+                - 2*(5-3*c)*y[2]*dydN[2]
+                - 0.25*(3-5*c)*(y[2]*dydN[3]+y[3]*dydN[2])
+                + 0.5*(3-c)*dydN[4]
+            )
+        )
     else:
-        dspecindex =  - (1./(1 - y[2])*
-                    (dydN[3]
-                    - 2.0*4.75564*y[2]*dydN[2]
-                    - 0.64815*(y[2]*dydN[3] + dydN[2]*y[3])
-                    + 1.45927*dydN[4]
-                    + 3.0*7.55258*y[2]*y[2]*dydN[2]
-                    + 12.0176*(y[2]*y[2]*dydN[3]+2.0*y[2]*dydN[2]*y[3])
-                    + 3.12145*(2.0*y[2]*y[3]*dydN[3]+dydN[2]*y[3]*y[3])
-                    + 3.0*0.0725242*y[3]*y[3]*dydN[3]
-                    + 5.92913*(y[2]*dydN[4]+dydN[2]*y[4])
-                    + 0.085369*(y[3]*dydN[4]+dydN[3]*y[4])
-                    + 0.290072*dydN[5]))
+        dspecindex = - (
+            1/(1 - y[2])*(
+                dydN[3]
+                - 2*4.75564*y[2]*dydN[2]
+                - 0.64815*(y[2]*dydN[3] + dydN[2]*y[3])
+                + 1.45927*dydN[4]
+                + 3*7.55258*y[2]*y[2]*dydN[2]
+                + 12.0176*(y[2]*y[2]*dydN[3]+2.0*y[2]*dydN[2]*y[3])
+                + 3.12145*(2.0*y[2]*y[3]*dydN[3]+dydN[2]*y[3]*y[3])
+                + 3*0.0725242*y[3]*y[3]*dydN[3]
+                + 5.92913*(y[2]*dydN[4]+dydN[2]*y[4])
+                + 0.085369*(y[3]*dydN[4]+dydN[3]*y[4])
+                + 0.290072*dydN[5]
+            )
+        )
 
     return dspecindex
