@@ -155,7 +155,8 @@ def main():
 
     while nontrivcount < NUMPOINTS:
         iters += 1
-        print(iters)
+        if iters > 1:
+            exit()
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
@@ -172,6 +173,9 @@ def main():
 
         y = yinit.copy()
 
+        print(calc.Nefolds)
+        print(y)
+        print(calc)
         calc.ret = calcpath(calc.Nefolds, y, path, N, calc)
 
         if calc.ret == "asymptote":
@@ -287,9 +291,6 @@ def main():
                 save_path(path, N, calc.npoints, fname)
 
                 savedone = 1
-
-            if spec_count > 0:
-                exit()
 
     print(f"Done. points = {points}, iters = {iters}, errcount = {errcount}")
     print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")

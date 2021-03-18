@@ -1,48 +1,34 @@
 # from scipy.integrate import solve_ivp
-import pygsl.odeiv as odeiv
+import sys
 
 from MacroDefinitions import *
 
-def int_de(y, N, Nend, kount, kmax, ypp, xpp, NEQS, derivs):
+from scipy.integrate import solve_ivp
+
+def int_de(y, N, Nend, kmax, NEQS, derivs):
     h = 1e-6
-    status = 0
-    count = 0
 
-    s = odeiv.step_rk4(NEQS, derivs)
-    c = odeiv.control_y_new(s, 1e-8, 1e-8)
-    e = odeiv.evolve(s, c, NEQS)
+    abs_tol = 1e-8
+    rel_tol = 1e-8
 
-    ydoub = y.copy()
+    res = solve_ivp(
+        derivs,
+        (N, Nend),
+        y,
+        method='RK45',
+        first_step=h,
+        rtol=abs_tol,
+        atol=rel_tol,
+    )
 
-    if N > Nend:
-        h = -h
+    status = res.status
 
-    while N != Nend:
-        try:
-            N, h, ydoub = e.apply(N, Nend, h, ydoub)
-        except:
-            status = 1
-            break
-        
-        for i in range(NEQS): y[i] = ydoub[i]
+    yp = res.y
+    xp = res.t
 
-        ypp[:, count] = y.copy()
-        xpp[count] = N
+    count = xp.shape[0]
 
-        count += 1
+    if count > kmax:
+        sys.exit("BIG PROBLEM with count")
 
-        if count == kmax:
-            break
-
-    ypp_temp = ypp[:, 0:count].copy()
-    xpp_temp = xpp[0:count].copy()
-
-    ypp.resize((NEQS, count), refcheck=False)
-    xpp.resize(count, refcheck=False)
-
-    ypp[:,:] = ypp_temp.copy()
-    xpp[:] = xpp_temp.copy()
-
-    kount = count
-
-    return status, kount
+    return status, count, yp, xp

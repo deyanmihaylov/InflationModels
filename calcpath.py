@@ -14,12 +14,12 @@ c = 0.0814514 # = 4 (ln(2)+\gamma)-5, \gamma = 0.5772156649
 
 def calcpath(Nefolds, y, path, N, calc):
     retval = "internal_error"
-    i = None
-    j = None
-    k = None
-    z = None
-    kount = None
-    Hnorm = None
+    # i = None
+    # j = None
+    # k = None
+    # z = None
+    # kount = None
+    # Hnorm = None
     
     # Check to make sure we are calculating to sufficient order.
     if NEQS < 6:
@@ -30,21 +30,21 @@ def calcpath(Nefolds, y, path, N, calc):
     # dydN = derivatives of flow functions wrt N
     # yp = intermediate values for y
     # xp = intermediate values for N
-    yp = np.zeros((NEQS, kmax), dtype=float, order='C')
-    xp = np.zeros(kmax, dtype=float, order='C')
+    # yp = np.zeros((NEQS, kmax), dtype=float, order='C')
+    # xp = np.zeros(kmax, dtype=float, order='C')
     
     # First find the end of inflation, when epsilon crosses through unity.
     Nstart = LOTSOFEFOLDS
-    Nend = 0.
+    Nend = 0
     
-    z, kount = int_de(y, Nstart, Nend, kount, kmax, yp, xp, NEQS, derivs)
+    z, count, yp, xp = int_de(y, Nstart, Nend, kmax, NEQS, derivs)
 
     if z:
         retval = "internal_error"
         z = 0
     else:
         # Find when epsilon passes through unity
-        i = check_convergence(yp, kount)
+        i = check_convergence(yp)
 
         if i == 0:
             # We never found an end to inflation, so we must be at a late-time attractor
@@ -61,15 +61,12 @@ def calcpath(Nefolds, y, path, N, calc):
 
             y[:] = yp[:, i-2].copy()
 
-            yp = np.zeros((NEQS, kmax), dtype=float, order='C')
-            xp = np.zeros(kmax, dtype=float, order='C')
-
-            z, kount = int_de(y, Nstart, Nend, kount, kmax, yp, xp, NEQS, derivs)
+            z, count, yp, xp = int_de(y, Nstart, Nend, kmax, NEQS, derivs)
 
             if z:
                 retval = "internal_error"
                 z = 0
-            elif check_convergence(yp, kount):
+            elif check_convergence(yp):
                 # Not enough inflation.
                 retval = "insuff"
             else:
@@ -91,17 +88,12 @@ def calcpath(Nefolds, y, path, N, calc):
     # function is responsible for freeing these buffers! The
     # buffers are only filled in if non-null pointers are provided.
 
-    if (path is not None) and (N is not None) and (retval != "internal_error") and kount > 1:
-        N.resize(kount, refcheck=False)
-        path.resize(NEQS, kount, refcheck=False)
+    if (path is not None) and (N is not None) and (retval != "internal_error") and count > 1:
+        # N.resize(kount, refcheck=False)
+        # path.resize(NEQS, kount, refcheck=False)
 
-        for j in range(kount):
-            N[j] = xp[j]
-
-            for i in range(NEQS):
-                path[i, j] = yp[i, j]
-
-        count = kount
+        N = xp.copy()
+        path = yp.copy()
     else:
         count = 0
 
@@ -109,7 +101,10 @@ def calcpath(Nefolds, y, path, N, calc):
 
     return retval
 
-def derivs(t, y, dydN):
+def derivs(
+    t,
+    y,
+):
     dydN = np.zeros(NEQS, dtype=float, order='C')
     
     if y[2] >= 1.0:
@@ -131,12 +126,12 @@ def derivs(t, y, dydN):
 
     return dydN
 
-def check_convergence(yy, kount):
-    for i in range(kount):
-        if np.abs(yy[2, i]) >= 1.:
-            return i
-        
-    return 0
+def check_convergence(
+    y
+) -> int:
+    i = np.argmax(y[2, :] >= 1)
+
+    return i
 
 def tsratio(y):
     tsratio = 16 * y[2] * (1.-c*(y[3]+2.*y[2]))
@@ -145,9 +140,16 @@ def tsratio(y):
 
 def specindex(y):
     if SECONDORDER is True:
-        specindex = 1. + y[3] - (5.-3.*c)*y[2]*y[2] - 0.25*(3.-5.*c)*y[2]*y[3] + 0.5*(3.-c)*y[4]
+        specindex = (
+            1
+            + y[3]
+            - (5-3*c)*y[2]*y[2]
+            - 0.25*(3-5*c)*y[2]*y[3]
+            + 0.5*(3-c)*y[4]
+        )
     else:
-        specindex = (1.0 + y[3]
+        specindex = (
+            1 + y[3]
             - 4.75564*y[2]*y[2]
             - 0.64815*y[2]*y[3]
             + 1.45927*y[4]
@@ -157,7 +159,8 @@ def specindex(y):
             + 0.0725242*y[3]*y[3]*y[3]
             + 5.92913*y[2]*y[4]
             + 0.085369*y[3]*y[4]
-            + 0.290072*y[5])
+            + 0.290072*y[5]
+        )
 
     return specindex
 
@@ -189,26 +192,3 @@ def dspecindex(y):
                     + 0.290072*dydN[5]))
 
     return dspecindex
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
