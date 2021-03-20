@@ -75,7 +75,7 @@ def save_path(y, N, kount, fname):
     try:
         outfile = open(fname, "w")
     except IOError as e:
-        print(f"Could not open file {fname}, errno = {e}.")
+        # print(f"Could not open file {fname}, errno = {e}.")
         sys.exit()
 
     # Output intermediate data from the integration
@@ -111,71 +111,51 @@ def main():
     try:
         outfile1 = open(OUTFILE1_NAME, "w")
     except IOError as e:
-        print(f"Could not open file {OUTFILE1_NAME}, errno = {e}.")
+        # print(f"Could not open file {OUTFILE1_NAME}, errno = {e}.")
         sys.exit()
         
     try:
         outfile2 = open(OUTFILE2_NAME, "w")
     except IOError as e:
-        print(f"Could not open file {OUTFILE2_NAME}, errno = {e}.")
+        # print(f"Could not open file {OUTFILE2_NAME}, errno = {e}.")
         sys.exit()
 
-    # allocate buffers
-    y = np.zeros(NEQS, dtype=float, order='C')
-    yinit = np.zeros(NEQS, dtype=float, order='C')
     N = np.array([])
 
     path = np.array([[]])
-
-    # iters = total number of iterations
-    iters = 0
-
-    # points = points saved with n < NMAX
-    points = 0
-
+ 
+    iters = 0 # iters = total number of iterations
+    points = 0 # points = points saved with n < NMAX
     errcount = 0
-
     outcount = 0
-
-    # asymcount = points with 0 < n < NMAX , r = 0
-    asymcount = 0
-
-    # nontrivcount = nontrivial points
-    nontrivcount = 0
-
-    # insuffcount = points where slow roll breaks down before N-efolds
-    insuffcount = 0
-
-    # noconvcount = points that do not converge to either a late time attractor or end of inflation
-    noconvcount = 0
-
+    asymcount = 0 # asymcount = points with 0 < n < NMAX , r = 0
+    nontrivcount = 0 # nontrivcount = nontrivial points
+    insuffcount = 0 # insuffcount = points where slow roll breaks down before N-efolds
+    noconvcount = 0 # points that do not converge to either a late time attractor or end of inflation
     badncount = 0
-
     savedone = 0
 
     while nontrivcount < NUMPOINTS:
         iters += 1
-        if iters > 1:
+        if iters > 1000:
             exit()
+        print(iters)
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
-                print(f"\n asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
-                print(f"\n{iters}", end="")
+                pass
+                # print(f"\n asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+                # print(f"\n{iters}", end="")
             else:
                 print(".", end="")
 
         yinit, calc.Nefolds = pick_init_vals()
 
-        # remove when spectrum code is finished
-        # if iters < 121:
-        #     continue
-
         y = yinit.copy()
 
-        print(calc.Nefolds)
-        print(y)
-        print(calc)
+        # print(calc.Nefolds)
+        # print(y)
+        # print(calc)
         calc.ret = calcpath(calc.Nefolds, y, path, N, calc)
 
         if calc.ret == "asymptote":
@@ -216,10 +196,10 @@ def main():
 
             if SPECTRUM is True:
                 if we_should_calc_spec(y):
-                    print(f"Evaluating spectrum {spec_count}")
+                    # print(f"Evaluating spectrum {spec_count}")
 
-                    specnum_s = f"spec_s{str(spec_count).zfill(3)}.dat"
-                    specnum_t = f"spec_t{str(spec_count).zfill(3)}.dat"
+                    specnum_s = "spec_s"+str(spec_count).zfill(3)+".dat"
+                    specnum_t = "spec_t"+str(spec_count).zfill(3)+".dat"
 
                     spec_count += 1
 
@@ -285,15 +265,15 @@ def main():
                         path[0, j] = path[0, j] - path[0, calc.npoints-1]
                         path[1, j] = path[1, j] * y[1]
 
-                fname = f"path{str(outcount).zfill(3)}.dat"
+                fname = "path"+str(outcount).zfill(3)+".dat"
                 outcount += 1
 
                 save_path(path, N, calc.npoints, fname)
 
                 savedone = 1
 
-    print(f"Done. points = {points}, iters = {iters}, errcount = {errcount}")
-    print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+    # print(f"Done. points = {points}, iters = {iters}, errcount = {errcount}")
+    # print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
 
     outfile1.close()
     outfile2.close()

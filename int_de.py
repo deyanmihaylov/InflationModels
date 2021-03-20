@@ -1,4 +1,3 @@
-# from scipy.integrate import solve_ivp
 import sys
 
 from MacroDefinitions import *

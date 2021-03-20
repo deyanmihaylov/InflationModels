@@ -114,21 +114,18 @@ def derivs(
     dydN = np.zeros(NEQS, dtype=float, order='C')
     
     if y[2] >= 1.0:
-        dydN = np.zeros(NEQS , dtype=float , order='C')
+        return dydN
     else:
         if y[2] > VERYSMALLNUM:
-            dydN[0] = - np.sqrt(y[2] / (4 * np.pi))
+            dydN[0] = - np.sqrt(y[2] / (4*np.pi))
         else:
-            dydN[0] = 0.0
+            dydN[0] = 0
         
         dydN[1] = y[1] * y[2]
-        dydN[2] = y[2] * (y[3] + 2.0 * y[2])
-        dydN[3] = 2. * y[4] - 5. * y[2] * y[3] - 12. * y[2] * y[2]
-        
-        for i in range(4, NEQS-1):
-            dydN[i] = ( 0.5 * (i-3) * y[3] + (i-4) * y[2] ) * y[i] + y[i+1]
-            
-        dydN[NEQS-1] = ( 0.5 * (NEQS-4) * y[3] + (NEQS-5) * y[2] ) * y[NEQS-1]
+        dydN[2] = y[2] * (y[3] + 2 * y[2])
+        dydN[3] = 2*y[4] - 5*y[2]*y[3] - 12*y[2]*y[2]
+        dydN[4:NEQS-1] = np.array([(0.5 * (i-3) * y[3] + (i-4) * y[2]) * y[i] + y[i+1] for i in range(4, NEQS-1)])
+        dydN[NEQS-1] = (0.5 * (NEQS-4) * y[3] + (NEQS-5) * y[2]) * y[NEQS-1]
 
     return dydN
 
