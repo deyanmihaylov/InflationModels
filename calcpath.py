@@ -1,5 +1,7 @@
 import numpy as np
 
+from time import process_time
+
 from MacroDefinitions import *
 from int_de import *
 
@@ -8,7 +10,7 @@ kmax = 20000
 
 SMALLNUM = 0.0001
 VERYSMALLNUM = 1e-18
-LOTSOFEFOLDS = 1000.0
+LOTSOFEFOLDS = 1000
 
 c = 0.0814514 # = 4 (ln(2)+\gamma)-5, \gamma = 0.5772156649
 
@@ -20,30 +22,19 @@ def calcpath(
     calc,
 ):
     retval = "internal_error"
-    # i = None
-    # j = None
-    # k = None
-    # z = None
-    # kount = None
-    # Hnorm = None
     
     # Check to make sure we are calculating to sufficient order.
     if NEQS < 6:
         raise Exception("calcpath(): NEQS must be at least 6\n")
         sys.exit()
     
-    # Allocate buffers for integration.
-    # dydN = derivatives of flow functions wrt N
-    # yp = intermediate values for y
-    # xp = intermediate values for N
-    # yp = np.zeros((NEQS, kmax), dtype=float, order='C')
-    # xp = np.zeros(kmax, dtype=float, order='C')
-    
     # First find the end of inflation, when epsilon crosses through unity.
     Nstart = LOTSOFEFOLDS
     Nend = 0
     
     z, count, yp, xp = int_de(y, Nstart, Nend, kmax, NEQS, derivs)
+
+    y = yp[:, -1].copy()
 
     if z:
         retval = "internal_error"
@@ -54,7 +45,7 @@ def calcpath(
 
         if i == 0:
             # We never found an end to inflation, so we must be at a late-time attractor
-            if y[2] > SMALLNUM or y[3] < 0.:
+            if y[2] > SMALLNUM or y[3] < 0:
                 # The system did not evolve to a known asymptote
                 retval = "noconverge"
             else:
@@ -65,7 +56,7 @@ def calcpath(
             Nstart = xp[i-2] - xp[i-1]
             Nend = Nefolds
 
-            y[:] = yp[:, i-2].copy()
+            y = yp[:, i-2].copy()
 
             z, count, yp, xp = int_de(y, Nstart, Nend, kmax, NEQS, derivs)
 
@@ -113,7 +104,7 @@ def derivs(
 ):
     dydN = np.zeros(NEQS, dtype=float, order='C')
     
-    if y[2] >= 1.0:
+    if y[2] >= 1:
         return dydN
     else:
         if y[2] > VERYSMALLNUM:
@@ -124,7 +115,7 @@ def derivs(
         dydN[1] = y[1] * y[2]
         dydN[2] = y[2] * (y[3] + 2 * y[2])
         dydN[3] = 2*y[4] - 5*y[2]*y[3] - 12*y[2]*y[2]
-        dydN[4:NEQS-1] = np.array([(0.5 * (i-3) * y[3] + (i-4) * y[2]) * y[i] + y[i+1] for i in range(4, NEQS-1)])
+        dydN[4:NEQS-1] = np.array([(0.5*(i-3)*y[3] + (i-4)*y[2]) * y[i] + y[i+1] for i in range(4, NEQS-1)])
         dydN[NEQS-1] = (0.5 * (NEQS-4) * y[3] + (NEQS-5) * y[2]) * y[NEQS-1]
 
     return dydN
@@ -156,7 +147,8 @@ def specindex(
         )
     else:
         specindex = (
-            1 + y[3]
+            1 
+            + y[3]
             - 4.75564*y[2]*y[2]
             - 0.64815*y[2]*y[3]
             + 1.45927*y[4]

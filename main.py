@@ -1,6 +1,7 @@
 import numpy as np
 import sys
-from scipy.integrate import solve_ivp
+
+from time import process_time
 
 from MacroDefinitions import *
 from calcpath import *
@@ -39,8 +40,8 @@ class Calc:
 def pick_init_vals():
     init_vals = np.zeros(NEQS, dtype=float, order='C')
     
-    init_vals[0] = 0.0
-    init_vals[1] = 1.0
+    init_vals[0] = 0
+    init_vals[1] = 1
     init_vals[2] = my_random.uniform() * 0.8
     init_vals[3] = my_random.uniform() - 0.5
     init_vals[4] = my_random.uniform()*0.1 - 0.05
@@ -75,7 +76,7 @@ def save_path(y, N, kount, fname):
     try:
         outfile = open(fname, "w")
     except IOError as e:
-        # print(f"Could not open file {fname}, errno = {e}.")
+        print(f"Could not open file {fname}, errno = {e}.")
         sys.exit()
 
     # Output intermediate data from the integration
@@ -86,9 +87,9 @@ def save_path(y, N, kount, fname):
         outfile.write("%lf " % (N[i]))
 
         # Calculate "reconstructed" value of the potential, in Planck units.
-        V = (3./(8.*np.pi)) * y[1, i] * y[1, i] * (1.-y[2, i]/3.)
+        V = (3/(8*np.pi)) * y[1, i] * y[1, i] * (1-y[2, i]/3)
         outfile.write("%le " % (V))
-        outfile.write("%le\n" % ((V*y[2, i]) / (3.-y[2, i])))
+        outfile.write("%le\n" % ((V*y[2, i]) / (3-y[2, i])))
 
     outfile.close()
 
@@ -111,13 +112,13 @@ def main():
     try:
         outfile1 = open(OUTFILE1_NAME, "w")
     except IOError as e:
-        # print(f"Could not open file {OUTFILE1_NAME}, errno = {e}.")
+        print(f"Could not open file {OUTFILE1_NAME}, errno = {e}.")
         sys.exit()
         
     try:
         outfile2 = open(OUTFILE2_NAME, "w")
     except IOError as e:
-        # print(f"Could not open file {OUTFILE2_NAME}, errno = {e}.")
+        print(f"Could not open file {OUTFILE2_NAME}, errno = {e}.")
         sys.exit()
 
     N = np.array([])
@@ -137,15 +138,13 @@ def main():
 
     while nontrivcount < NUMPOINTS:
         iters += 1
-        if iters > 1000:
+        if iters > 50:
             exit()
-        print(iters)
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
-                pass
-                # print(f"\n asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
-                # print(f"\n{iters}", end="")
+                print(f"\n asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+                print(f"\n{iters}", end="")
             else:
                 print(".", end="")
 
@@ -153,10 +152,12 @@ def main():
 
         y = yinit.copy()
 
-        # print(calc.Nefolds)
-        # print(y)
-        # print(calc)
+        # time1 = process_time()
         calc.ret = calcpath(calc.Nefolds, y, path, N, calc)
+        print(calc.ret)
+        # time2 = process_time()
+
+        # print(iters, time2 - time1)
 
         if calc.ret == "asymptote":
             # Check to see if the spectral index is within the slow roll range
@@ -196,7 +197,7 @@ def main():
 
             if SPECTRUM is True:
                 if we_should_calc_spec(y):
-                    # print(f"Evaluating spectrum {spec_count}")
+                    print(f"Evaluating spectrum {spec_count}")
 
                     specnum_s = "spec_s"+str(spec_count).zfill(3)+".dat"
                     specnum_t = "spec_t"+str(spec_count).zfill(3)+".dat"
@@ -218,7 +219,16 @@ def main():
                     y_final[:NEQS] = path[:NEQS, 3]
                     y_final[NEQS] = N[3]
 
-                    spectrum_status = spectrum(y_final, y, u_s, u_t, calc.Nefolds, derivs1, scalarsys, tensorsys)
+                    spectrum_status = spectrum(
+                        y_final,
+                        y,
+                        u_s,
+                        u_t,
+                        calc.Nefolds,
+                        derivs1,
+                        scalarsys,
+                        tensorsys
+                    )
 
                     if spectrum_status:
                         errcount += 1
@@ -272,8 +282,8 @@ def main():
 
                 savedone = 1
 
-    # print(f"Done. points = {points}, iters = {iters}, errcount = {errcount}")
-    # print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+    print(f"Done. points = {points}, iters = {iters}, errcount = {errcount}")
+    print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
 
     outfile1.close()
     outfile2.close()
