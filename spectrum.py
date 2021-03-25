@@ -9,8 +9,8 @@ from pygsl.testing import _ufuncs
 
 from calcpath import *
 
-knos = 1575 # total number of k-values to evaluate
-kinos = 214 # total number of k-values to use for integration
+# knos = 1575 # total number of k-values to evaluate
+# kinos = 214 # total number of k-values to use for integration
 
 k_file = "ks_eval.dat" # file containing k-values at which to evaluate spectrum
 ki_file = "ks.dat" # file containing k-values for integration
