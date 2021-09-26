@@ -15,12 +15,11 @@ LOTSOFEFOLDS = 1000
 c = 0.0814514 # = 4 (ln(2)+\gamma)-5, \gamma = 0.5772156649
 
 def calcpath(
-    Nefolds,
     y,
-    path,
-    N,
     calc,
 ):
+    Nefolds = calc.Nefolds
+
     retval = "internal_error"
     
     # Check to make sure we are calculating to sufficient order.
@@ -33,7 +32,6 @@ def calcpath(
     Nend = 0
     
     z, count, yp, xp = int_de(y, Nstart, Nend, kmax, NEQS, derivs)
-
     y = yp[:, -1].copy()
 
     if z:
@@ -59,6 +57,7 @@ def calcpath(
             y = yp[:, i-2].copy()
 
             z, count, yp, xp = int_de(y, Nstart, Nend, kmax, NEQS, derivs)
+            y = yp[:, -1].copy()
 
             if z:
                 retval = "internal_error"
@@ -85,10 +84,7 @@ def calcpath(
     # function is responsible for freeing these buffers! The
     # buffers are only filled in if non-null pointers are provided.
 
-    if (path is not None) and (N is not None) and (retval != "internal_error") and count > 1:
-        # N.resize(kount, refcheck=False)
-        # path.resize(NEQS, kount, refcheck=False)
-
+    if retval != "internal_error" and count > 1:
         N = xp.copy()
         path = yp.copy()
     else:
@@ -96,7 +92,7 @@ def calcpath(
 
     calc.npoints = count
 
-    return retval
+    return retval, path, N, y
 
 def derivs(
     t,

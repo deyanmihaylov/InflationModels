@@ -1,0 +1,45 @@
+\documentclass{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows}
+\begin{document}
+\pagestyle{empty}
+
+% Define block styles
+\tikzstyle{decision} = [diamond, draw, fill=blue!20, text width=6em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, text width=12em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, ellipse,fill=red!20, node distance=3cm, minimum height=2em]
+    
+\begin{tikzpicture}[node distance = 2cm, auto]
+    % Place nodes
+    \node [block] (init) {Begin program};
+    \node [block, below of=init] (static) {Set static variables:};
+    \node [block, below of=static] (initialize) {Initialize buffers and variables:};
+    \node [block, below of=initialize] (spectrum1) {SPECTRUM == True?};
+    	\node [block, right of=spectrum1, node distance=20em] (intialize_spectrum) {Initialize SPECTRUM variables:};
+    \node [block, below of=spectrum1] (open_files) {Open output files:};
+    \node [block, below of=open_files] (while) {nontrivcount $<$ NUMPOINTS?};
+%    \node [block, below of=static] (identify) {identify candidate models};
+%    \node [block, below of=identify] (evaluate) {evaluate candidate models};
+%    \node [block, left of=evaluate, node distance=3cm] (update) {update model};
+%    \node [decision, below of=evaluate] (decide) {is best candidate better?};
+%    \node [block, below of=decide, node distance=3cm] (stop) {stop};
+    % Draw edges
+    \path [line] (init) -- (static);
+    \path [line] (static) -- (initialize);
+    \path [line] (initialize) -- (spectrum1);
+    \path [line] (spectrum1) -- node {Yes}(intialize_spectrum);
+    \path [line] (spectrum1) -- node {No}(open_files);
+    \path [line] (intialize_spectrum) |- (open_files);
+     \path [line] (open_files) -- (while);
+%    \path [line] (identify) -- (evaluate);
+%    \path [line] (evaluate) -- (decide);
+%    \path [line] (decide) -| node [near start] {yes} (update);
+%    \path [line] (update) |- (identify);
+%    \path [line] (decide) -- node {no}(stop);
+\end{tikzpicture}
+
+
+\end{document}
