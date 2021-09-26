@@ -155,6 +155,8 @@ def main():
 
     while nontrivcount < NUMPOINTS:
         iters += 1
+        if iters > 200:
+            exit()
         print(iters)
 
         if iters % 100 == 0:
@@ -173,6 +175,7 @@ def main():
         y = yinit.copy()
 
         calc.ret = calcpath(calc.Nefolds, y, path, N, calc)
+        print(calc.ret)
 
         if calc.ret == "asymptote":
             # Check to see if the spectral index is within the slow roll range
@@ -211,6 +214,7 @@ def main():
             nontrivcount += 1
 
             if SPECTRUM is True:
+                print(y)
                 if we_should_calc_spec(y):
                     print(f"Evaluating spectrum {spec_count}")
 
