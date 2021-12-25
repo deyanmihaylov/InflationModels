@@ -75,7 +75,7 @@ def save_path(y, N, kount, fname):
     try:
         outfile = open(fname, "w")
     except IOError as e:
-        print(f"Could not open file {fname}, errno = {e}.")
+        print("Could not open file " + fname + ", errno = " + e + ".")
         sys.exit()
 
     # Output intermediate data from the integration
@@ -111,13 +111,13 @@ def main():
     try:
         outfile1 = open(OUTFILE1_NAME, "w")
     except IOError as e:
-        print(f"Could not open file {OUTFILE1_NAME}, errno = {e}.")
+        print("Could not open file " + OUTFILE1_NAME + ", errno = " + e + ".")
         sys.exit()
         
     try:
         outfile2 = open(OUTFILE2_NAME, "w")
     except IOError as e:
-        print(f"Could not open file {OUTFILE2_NAME}, errno = {e}.")
+        print("Could not open file " + OUTFILE2_NAME + ", errno = " + e + ".")
         sys.exit()
 
     # allocate buffers
@@ -161,10 +161,10 @@ def main():
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
-                print(f"\n asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
-                print(f"\n{iters}", end="")
+                print("\n asymcount = " + str(asymcount) + ", nontrivcount = " + str(nontrivcount) + ", insuffcount = " + str(insuffcount) + ", noconvcount = " + str(noconvcount) + ", badncount = " + str(badncount) + ", errcount = " + str(errcount))
+                print("\n " + str(iters))
             else:
-                print(".", end="")
+                print(".")
 
         yinit, calc.Nefolds = pick_init_vals()
 
@@ -216,10 +216,10 @@ def main():
             if SPECTRUM is True:
                 print(y)
                 if we_should_calc_spec(y):
-                    print(f"Evaluating spectrum {spec_count}")
+                    print("Evaluating spectrum " + str(spec_count))
 
-                    specnum_s = f"spec_s{str(spec_count).zfill(3)}.dat"
-                    specnum_t = f"spec_t{str(spec_count).zfill(3)}.dat"
+                    specnum_s = "spec_s" + str(spec_count).zfill(3) + ".dat"
+                    specnum_t = "spec_t" + str(spec_count).zfill(3) + ".dat"
 
                     spec_count += 1
 
@@ -285,7 +285,7 @@ def main():
                         path[0, j] = path[0, j] - path[0, calc.npoints-1]
                         path[1, j] = path[1, j] * y[1]
 
-                fname = f"path{str(outcount).zfill(3)}.dat"
+                fname = "path" + str(outcount).zfill(3) + ".dat"
                 outcount += 1
 
                 save_path(path, N, calc.npoints, fname)
@@ -295,9 +295,9 @@ def main():
             if spec_count > 0:
                 exit()
 
-    print(f"Done. points = {points}, iters = {iters}, errcount = {errcount}")
-    print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
-
+    print("Done. points = " + str(points) + ", iters = " + str(iters) + ", errcount = " + str(errcount))
+    print("asymcount = " + str(asymcount) + ", nontrivcount = " + str(nontrivcount) + ", insuffcount = " + str(insuffcount) + ", noconvcount = " + str(noconvcount) + ", badncount = " + str(badncount) + ", errcount = " + str(errcount))
+    
     outfile1.close()
     outfile2.close()
 
