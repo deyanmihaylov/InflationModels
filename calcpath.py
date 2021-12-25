@@ -1,6 +1,6 @@
 import numpy as np
 
-from time import process_time
+# from time import process_time
 
 from MacroDefinitions import *
 from int_de import *
@@ -118,7 +118,7 @@ def derivs(
 
 def check_convergence(
     y,
-) -> int:
+):
     i = np.argmax(y[2, :] >= 1)
 
     return i

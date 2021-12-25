@@ -48,13 +48,15 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     try:
         ks = np.loadtxt(k_file)
     except IOError as e:
-        print(f"Could not open file {k_file}, errno = {e}.")
+        # print(f"Could not open file {k_file}, errno = {e}.")
+        print("Could not open file " + k_file + ", errno = " + e + ".")
         sys.exit()
         
     try:
         kis = np.loadtxt(ki_file)
     except IOError as e:
-        print(f"Could not open file {ki_file}, errno = {e}.")
+        # print(f"Could not open file {ki_file}, errno = {e}.")
+        print("Could not open file " + ki_file + ", errno = " + e + ".")
         sys.exit()
 
     countback = 0

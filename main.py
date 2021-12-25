@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 
-from time import process_time
+# from time import process_time
 
 from MacroDefinitions import *
 from calcpath import *
@@ -9,6 +9,8 @@ from int_de import *
 if SPECTRUM: from spectrum import *
 
 import pygsl.rng
+
+# from pyNN.random import GSLRNG
 
 my_random = pygsl.rng.ranlxd2()
 my_random.set(0)
@@ -76,7 +78,8 @@ def save_path(y, N, kount, fname):
     try:
         outfile = open(fname, "w")
     except IOError as e:
-        print(f"Could not open file {fname}, errno = {e}.")
+        # print(f"Could not open file {fname}, errno = {e}.")
+        print("Could not open file " + fname +", errno = " + e + ".")
         sys.exit()
 
     # Output intermediate data from the integration
@@ -112,13 +115,15 @@ def main():
     try:
         outfile1 = open(OUTFILE1_NAME, "w")
     except IOError as e:
-        print(f"Could not open file {OUTFILE1_NAME}, errno = {e}.")
+        # print(f"Could not open file {OUTFILE1_NAME}, errno = {e}.")
+        print("Could not open file " + OUTFILE1_NAME + ", errno = " + e + ".")
         sys.exit()
         
     try:
         outfile2 = open(OUTFILE2_NAME, "w")
     except IOError as e:
-        print(f"Could not open file {OUTFILE2_NAME}, errno = {e}.")
+        # print(f"Could not open file {OUTFILE2_NAME}, errno = {e}.")
+        print("Could not open file " + OUTFILE2_NAME + ", errno = " + e + ".")
         sys.exit()
 
     N = np.array([])
@@ -144,10 +149,12 @@ def main():
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
-                print(f"\n asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
-                print(f"\n{iters}", end="")
+                # print(f"\n asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+                # print(f"\n{iters}", end="")
+                print("\n asymcount = " + str(asymcount) + ", nontrivcount = " + str(nontrivcount) + ", insuffcount = " + str(insuffcount) + ", noconvcount = " + str(noconvcount) + ", badncount = " + str(badncount) + ", errcount = " + str(errcount) + "")
+                print(str(iters))
             else:
-                print(".", end="")
+                print(".")
 
         yinit, calc.Nefolds = pick_init_vals()
 
@@ -195,7 +202,8 @@ def main():
             if SPECTRUM is True:
                 print(y)
                 if we_should_calc_spec(y):
-                    print(f"Evaluating spectrum {spec_count}")
+                    # print(f"Evaluating spectrum {spec_count}")
+                    print("Evaluating spectrum " + str(spec_count) + "")
 
                     specnum_s = "spec_s"+str(spec_count).zfill(3)+".dat"
                     specnum_t = "spec_t"+str(spec_count).zfill(3)+".dat"
@@ -280,8 +288,8 @@ def main():
 
                 savedone = 1
 
-    print(f"Done. points = {points}, iters = {iters}, errcount = {errcount}")
-    print(f"asymcount = {asymcount}, nontrivcount = {nontrivcount}, insuffcount = {insuffcount}, noconvcount = {noconvcount}, badncount = {badncount}, errcount = {errcount}")
+    print("Done. points = " + str(points) + ", iters = " + str(iters) + ", errcount = " + str(errcount) + "")
+    print("asymcount = " + str(asymcount) + ", nontrivcount = " + str(nontrivcount) + ", insuffcount = " + str(insuffcount) + ", noconvcount = " + str(noconvcount) + ", badncount = " + str(badncount) + ", errcount = " + str(errcount) + "")
 
     outfile1.close()
     outfile2.close()
