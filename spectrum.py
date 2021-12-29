@@ -1,9 +1,13 @@
 import numpy as np
 import pygsl.odeiv as odeiv
-import pygsl.spline as spline
+# import pygsl.spline as spline
 from pygsl.testing import _ufuncs
 
+from scipy.interpolate import CubicSpline
+
 from calcpath import *
+
+import matplotlib.pyplot as plt
 
 knos = 1575 # total number of k-values to evaluate
 kinos = 214 # total number of k-values to use for integration
@@ -26,7 +30,7 @@ class params:
 
 
 def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
-    i = None
+    # i = None
 
     h = 0.01
     h2 = 1.e-6 # init step size for mode integration
@@ -40,9 +44,9 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     spec_params = params()
 
     # Read in k files
-    k = None
-    ks = np.empty(knos)
-    kis = np.empty(kinos)
+    # k = None
+    # ks = np.empty(knos)
+    # kis = np.empty(kinos)
 
     try:
         ks = np.loadtxt(k_file)
@@ -68,31 +72,31 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     P_s = np.empty(kinos)
     P_t = np.empty(kinos)
 
-    j = None
-    l = None
-    m = None
-    o = None
-    status = None
+    # j = None
+    # l = None
+    # m = None
+    # o = None
+    # status = None
 
     countback = 0
     count = 0
 
-    ydoub = np.empty(NEQS)
+    # ydoub = np.empty(NEQS)
 
-    Ninit = None # N_obs from flow integration
-    Nfinal = None # Smallest N value from flow integration
+    # Ninit = None # N_obs from flow integration
+    # Nfinal = None # Smallest N value from flow integration
 
-    spec_norm = None
+    # spec_norm = None
 
-    ru_init = None
-    dru_init = None
+    # ru_init = None
+    # dru_init = None
 
-    iu_init = None
-    diu_init = None
+    # iu_init = None
+    # diu_init = None
 
-    nu = None
-    Yeff = None
-    Phi = None
+    # nu = None
+    # Yeff = None
+    # Phi = None
 
     # Buffers for interpolations
     Nefoldsback = np.empty(kmax)
@@ -120,7 +124,7 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     """
     Ninit = N
     spec_params.a_init = (1.73e-61/y[1]) * np.exp(Ninit)
-    spec_params.k = k
+    spec_params.k = None
 
     """
     To improve stability/efficiency, we first generate
@@ -133,7 +137,7 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     Integrate backwards from end of inflation to the earliest time needed in order to initialize the
     largest scale fluctuations in the BD limlt.
     """
-    ydoub[:] = y_final[:NEQS].copy()
+    ydoub = y_final[:NEQS].copy()
     N = y_final[NEQS]
     Nfinal = N
 
@@ -156,50 +160,60 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
 
     flowback[:, countback] = ydoub[:5].copy()
 
-    H = np.empty(countback+1)
-    eps = np.empty(countback+1)
-    sig = np.empty(countback+1)
-    xi = np.empty(countback+1)
+    # H = np.empty(countback+1)
+    # eps = np.empty(countback+1)
+    # sig = np.empty(countback+1)
+    # xi = np.empty(countback+1)
     Nefolds = np.empty(kmax)
     # Nefolds = np.empty(countback+1)
-    phi = np.empty(countback+1)
+    # phi = np.empty(countback+1)
 
-    H[:] = flowback[1, :countback+1].copy()
-    eps[:] = flowback[2, :countback+1].copy()
-    sig[:] = flowback[3, :countback+1].copy()
-    xi[:] = flowback[4, :countback+1].copy()
-    phi[:] = flowback[0, :countback+1].copy()
+    H = flowback[1, :countback+1].copy()
+    eps = flowback[2, :countback+1].copy()
+    sig = flowback[3, :countback+1].copy()
+    xi = flowback[4, :countback+1].copy()
+    phi = flowback[0, :countback+1].copy()
     Nefolds[:countback+1] = Nefoldsback[:countback+1].copy()
 
     # Generate interpolating functions for H, eps, sig, xi and phi (for path gen. only)
-    spline1 = spline.cspline(countback+1)
-    spline1.init(Nefolds[:countback+1], H)
+    # spline1 = spline.cspline(countback+1)
+    # spline1.init(Nefolds[:countback+1], H)
 
-    spline2 = spline.cspline(countback+1)
-    spline2.init(Nefolds[:countback+1], eps)
+    # spline2 = spline.cspline(countback+1)
+    # spline2.init(Nefolds[:countback+1], eps)
 
-    spline3 = spline.cspline(countback+1)
-    spline3.init(Nefolds[:countback+1], sig)
+    # spline3 = spline.cspline(countback+1)
+    # spline3.init(Nefolds[:countback+1], sig)
 
-    spline4 = spline.cspline(countback+1)
-    spline4.init(Nefolds[:countback+1], xi)
+    # spline4 = spline.cspline(countback+1)
+    # spline4.init(Nefolds[:countback+1], xi)
 
-    spline0 = spline.cspline(countback+1)
-    spline0.init(Nefolds[:countback+1], phi)
+    # spline0 = spline.cspline(countback+1)
+    # spline0.init(Nefolds[:countback+1], phi)
+
+    phi_interp = CubicSpline(Nefolds[:countback+1].copy(), phi.copy(), bc_type='natural')
+    H_interp = CubicSpline(Nefolds[:countback+1].copy(), H.copy(), bc_type='natural')
+    eps_interp = CubicSpline(Nefolds[:countback+1].copy(), eps.copy(), bc_type='natural')
+    sig_interp = CubicSpline(Nefolds[:countback+1].copy(), sig.copy(), bc_type='natural')
+    xi_interp = CubicSpline(Nefolds[:countback+1].copy(), xi.copy(), bc_type='natural')    
     
     h2 = -h2
 
     """
     Find scalar spectra first.
     """
+
     for m in range(kinos):
-        print(m)
+        print(m, kinos)
 
         k = kis[m] * 5.41e-58 # converts to Planck from hMpc^-1
         kis[m] = k
         N = Ninit
-        ydoub[1] = spline1.eval(N)
-        ydoub[2] = spline2.eval(N)
+        # ydoub[1] = spline1.eval(N)
+        # ydoub[2] = spline2.eval(N)
+        ydoub[1] = H_interp(N)[()]
+        ydoub[2] = eps_interp(N)[()]
+
         count = 0
 
         """
@@ -215,30 +229,78 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         if k/1.73e-61 > Y: # 1.73e-61 is the present Hubble radius (~3.2e-4 hMpc^-1) in Planck units
             while k / (spec_params.a_init*np.exp(-N)*ydoub[1]*(1-ydoub[2])) > Y:
                 N += -0.01
-                ydoub[1] = spline1.eval(N)
-                ydoub[2] = spline2.eval(N)
+                # ydoub[1] = spline1.eval(N)
+                # ydoub[2] = spline2.eval(N)
+                ydoub[1] = H_interp(N)[()]
+                ydoub[2] = eps_interp(N)[()]
         else:
             while k / (spec_params.a_init*np.exp(-N)*ydoub[1]*(1-ydoub[2])) < Y:
                 N += 0.01
-                ydoub[1] = spline1.eval(N)
-                ydoub[2] = spline2.eval(N)
+                # ydoub[1] = spline1.eval(N)
+                # ydoub[2] = spline2.eval(N)
+                ydoub[1] = H_interp(N)[()]
+                ydoub[2] = eps_interp(N)[()]
 
         spec_params.k = k
-        nu = (3-spline2.eval(N)) / (2*(1-spline2.eval(N)))
-        # print(nu)
-        Yeff = k / (spec_params.a_init*(np.exp(-N)*(spline1.eval(N)*(1.-spline2.eval(N)))))
-        # print(Yeff)
+        # nu = (3-spline2.eval(N)) / (2*(1-spline2.eval(N)))
+        nu = (3-eps_interp(N)) / (2*(1-eps_interp(N)))
+        # Yeff = k / (spec_params.a_init*(np.exp(-N)*(spline1.eval(N)*(1.-spline2.eval(N)))))
+        Yeff = k / (spec_params.a_init*(np.exp(-N)*(H_interp(N)*(1-eps_interp(N)))))
 
-        if spline2.eval(N) < 1.:
+        # if spline2.eval(N) < 1:
+        if eps_interp(N)[()] < 1.:
             ru_init = realu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
-            dru_init = realu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            # dru_init = realu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (
+            #     _ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(
+            #         -_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N)))
+            #     ))
+            # )
+            dru_init = realu_init[1] = (
+                0.5 * np.sqrt(np.pi/k) * 
+                (k/(spec_params.a_init*np.exp(-N)*H_interp(N))) * (
+                    _ufuncs.sf_bessel_Jnu(nu, Yeff)/(2*np.sqrt(Yeff)) +
+                    np.sqrt(Yeff) * (
+                        -_ufuncs.sf_bessel_Jnu(nu+1, Yeff) +
+                        (nu*(1-eps_interp(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1-eps_interp(N)))
+                    )
+                )
+            )
+
             iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Ynu(nu, Yeff)
-            diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Ynu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            # diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Ynu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            diu_init = imu_init[1] = (
+                0.5 * np.sqrt(np.pi/k) * 
+                (k/(spec_params.a_init*np.exp(-N)*H_interp(N))) * (
+                    _ufuncs.sf_bessel_Ynu(nu, Yeff)/(2*np.sqrt(Yeff)) +
+                    np.sqrt(Yeff) * (
+                        -_ufuncs.sf_bessel_Ynu(nu+1, Yeff) + (nu*(1-eps_interp(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1-eps_interp(N)))
+                    )
+                )
+            )
         else:
             ru_init = realu_init[0] = -0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Ynu(nu, Yeff)
-            dru_init = realu_init[1] = -0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Ynu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            # dru_init = realu_init[1] = -0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Ynu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            dru_init = realu_init[1] = (
+                -0.5 * np.sqrt(np.pi/k) * 
+                (k/(spec_params.a_init*np.exp(-N)*H_interp(N))) * (
+                    _ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff)) +
+                    np.sqrt(Yeff) * (
+                        -_ufuncs.sf_bessel_Ynu(nu+1, Yeff) + (nu*(1-eps_interp(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1-eps_interp(N)))
+                    )
+                )
+            )
+
             iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
-            diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            # diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
+            diu_init = imu_init[1] = (
+                0.5 * np.sqrt(np.pi/k) * 
+                (k/(spec_params.a_init*np.exp(-N)*H_interp(N))) * (
+                    _ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff)) +
+                    np.sqrt(Yeff) * (
+                        -_ufuncs.sf_bessel_Jnu(nu+1, Yeff)+(nu*(1-eps_interp(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1-eps_interp(N)))
+                    )
+                )
+            )
 
         """
         Solve for real part of u first.
@@ -250,11 +312,17 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             realu_s[count] = realu_init[0] * realu_init[0]
             Nefolds[count] = N
 
-            spec_params.H = spline1.eval(N)
-            spec_params.eps = spline2.eval(N)
-            spec_params.sig = spline3.eval(N)
-            spec_params.xi = spline4.eval(N)
-            Phi = spline0.eval(N)
+            # spec_params.H = spline1.eval(N)
+            # spec_params.eps = spline2.eval(N)
+            # spec_params.sig = spline3.eval(N)
+            # spec_params.xi = spline4.eval(N)
+            # Phi = spline0.eval(N)
+
+            spec_params.H = H_interp(N)[()]
+            spec_params.eps = eps_interp(N)[()]
+            spec_params.sig = sig_interp(N)[()]
+            spec_params.xi = xi_interp(N)[()]
+            Phi = phi_interp(N)[()]
 
             e2 = odeiv.evolve(s2, c2, 2) # mode eqs
             
@@ -282,8 +350,9 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         """
         Generate interpolating function for realu(N)
         """
-        spline5 = spline.cspline(count+1)
-        spline5.init(Nordered[:count+1], uordered_s[:count+1])
+        # spline5 = spline.cspline(count+1)
+        # spline5.init(Nordered[:count+1], uordered_s[:count+1])
+        realu_s_interp = CubicSpline(Nordered[:count+1].copy(), uordered_s[:count+1].copy(), bc_type='natural')
 
         """
         Imaginary part
@@ -299,10 +368,14 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             imu_s[count] = imu_init[0] * imu_init[0]
             Nefolds[count] = N
 
-            spec_params.H = spline1.eval(N)
-            spec_params.eps = spline2.eval(N)
-            spec_params.sig = spline3.eval(N)
-            spec_params.xi = spline4.eval(N)
+            # spec_params.H = spline1.eval(N)
+            # spec_params.eps = spline2.eval(N)
+            # spec_params.sig = spline3.eval(N)
+            # spec_params.xi = spline4.eval(N)
+            spec_params.H = H_interp(N)[()]
+            spec_params.eps = eps_interp(N)[()]
+            spec_params.sig = sig_interp(N)[()]
+            spec_params.xi = xi_interp(N)[()]
             
             try:
                 N, h2, imu_init = e2.apply(N, 0, h2, imu_init)
@@ -322,7 +395,15 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         Nefolds[count] = N
         count -= 1
 
-        P_s[m] = (k**3./(2.*(np.pi**2.))) * (spline5.eval(Nefolds[count])+imu_s[count]) / ((spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])*spline2.eval(Nefolds[count]))/(4*np.pi))
+        # P_s[m] = (k**3./(2.*(np.pi**2.))) * (spline5.eval(Nefolds[count])+imu_s[count]) / ((spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])*spline2.eval(Nefolds[count]))/(4*np.pi))
+        P_s[m] = (
+            (k**3/(2*(np.pi**2))) * 
+            (realu_s_interp(Nefolds[count])+imu_s[count]) / 
+            (
+                (spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])*eps_interp(Nefolds[count])) /
+                (4*np.pi)
+            )
+        )
 
         """
         Tensor spectra
@@ -340,8 +421,10 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             realu_t[count] = realu_init[0] * realu_init[0]
             Nefolds[count] = N
 
-            spec_params.H = spline1.eval(N)
-            spec_params.eps = spline2.eval(N)
+            # spec_params.H = spline1.eval(N)
+            # spec_params.eps = spline2.eval(N)
+            spec_params.H = H_interp(N)[()]
+            spec_params.eps = eps_interp(N)[()]
 
             e2 = odeiv.evolve(s2, c2, 2) # mode eqs
             
@@ -366,8 +449,9 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             Nordered[j] = Nefolds[count-j]
             uordered_t[j] = realu_t[count-j]
 
-        spline7 = spline.cspline(count+1)
-        spline7.init(Nordered[:count+1], uordered_t[:count+1])
+        # spline7 = spline.cspline(count+1)
+        # spline7.init(Nordered[:count+1], uordered_t[:count+1])
+        realu_t_interp = CubicSpline(Nordered[:count+1].copy(), uordered_t[:count+1].copy(), bc_type='natural')
 
         """
         Imaginary part
@@ -385,8 +469,10 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             imu_t[count] = imu_init[0] * imu_init[0]
             Nefolds[count] = N
 
-            spec_params.H = spline1.eval(N)
-            spec_params.eps = spline2.eval(N)
+            # spec_params.H = spline1.eval(N)
+            # spec_params.eps = spline2.eval(N)
+            spec_params.H = H_interp(N)[()]
+            spec_params.eps = eps_interp(N)[()]
 
             e2 = odeiv.evolve(s2, c2, 2) # mode eqs
             
@@ -408,9 +494,15 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         Nefolds[count] = N
         count -= 1
 
-        P_t[m] = 64. * np.pi * (k**3./(2.*np.pi**2.)) * (spline7.eval(Nefolds[count])+imu_t[count]) / ((spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])))
+        # P_t[m] = 64. * np.pi * (k**3./(2.*np.pi**2.)) * (spline7.eval(Nefolds[count])+imu_t[count]) / ((spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count])))
+        P_t[m] = (
+            64 * np.pi * (k**3/(2*np.pi**2)) * 
+            (realu_t_interp(Nefolds[count])+imu_t[count]) / 
+            (spec_params.a_init*np.exp(-Nefolds[count])*spec_params.a_init*np.exp(-Nefolds[count]))
+        )
 
         if kis[m] == knorm * 5.41e-58: # normalize here
+            print("yes")
             spec_norm = Amp / (P_s[m]+P_t[m])
 
             """
@@ -422,18 +514,23 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     """
     Now that we have finished calculating the spectra, interpolate each spectrum and evaluate at k-values of interest
     """
-    spline8 = spline.cspline(kinos)
-    spline8.init(kis, P_t)
+    # spline8 = spline.cspline(kinos)
+    # spline8.init(kis, P_t)
 
-    spline6 = spline.cspline(kinos)
-    spline6.init(kis, P_s)
+    # spline6 = spline.cspline(kinos)
+    # spline6.init(kis, P_s)
+
+    P_s_interp = CubicSpline(kis.copy(), P_s.copy(), bc_type='natural')
+    P_t_interp = CubicSpline(kis.copy(), P_t.copy(), bc_type='natural')
 
     for i in range(knos):
         u_s[0, i] = ks[i]
-        u_s[1, i] = spec_norm * spline6.eval(ks[i]*5.41e-58)
+        # u_s[1, i] = spec_norm * spline6.eval(ks[i]*5.41e-58)
+        u_s[1, i] = spec_norm * P_s_interp(ks[i]*5.41e-58)[()]
 
         u_t[0, i] = ks[i]
-        u_t[1, i] = spec_norm * spline8.eval(ks[i]*5.41e-58)
+        # u_t[1, i] = spec_norm * spline8.eval(ks[i]*5.41e-58)
+        u_t[1, i] = spec_norm * P_t_interp(ks[i]*5.41e-58)[()]
 
     return status
 
