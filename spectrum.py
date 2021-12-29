@@ -1,9 +1,10 @@
 import numpy as np
 import pygsl.odeiv as odeiv
 # import pygsl.spline as spline
-from pygsl.testing import _ufuncs
+# from pygsl.testing import _ufuncs
 
 from scipy.interpolate import CubicSpline
+from scipy.special import jv, yv
 
 from calcpath import *
 
@@ -247,57 +248,63 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         # Yeff = k / (spec_params.a_init*(np.exp(-N)*(spline1.eval(N)*(1.-spline2.eval(N)))))
         Yeff = k / (spec_params.a_init*(np.exp(-N)*(H_interp(N)*(1-eps_interp(N)))))
 
+        J_nu = jv(nu, Yeff)
+        J_nu1 = jv(nu+1, Yeff)
+        
+        Y_nu = yv(nu, Yeff)
+        Y_nu1 = yv(nu+1, Yeff)
+
         # if spline2.eval(N) < 1:
-        if eps_interp(N)[()] < 1.:
-            ru_init = realu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
+        if eps_interp(N)[()] < 1:
+            ru_init = realu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * J_nu
             # dru_init = realu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (
             #     _ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(
             #         -_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N)))
             #     ))
             # )
             dru_init = realu_init[1] = (
-                0.5 * np.sqrt(np.pi/k) * 
-                (k/(spec_params.a_init*np.exp(-N)*H_interp(N))) * (
-                    _ufuncs.sf_bessel_Jnu(nu, Yeff)/(2*np.sqrt(Yeff)) +
-                    np.sqrt(Yeff) * (
-                        -_ufuncs.sf_bessel_Jnu(nu+1, Yeff) +
-                        (nu*(1-eps_interp(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1-eps_interp(N)))
+                0.5 * np.sqrt(np.pi/k)
+                * (k/(spec_params.a_init*np.exp(-N)*H_interp(N))) * (
+                    J_nu/(2*np.sqrt(Yeff)) 
+                    + np.sqrt(Yeff) * (
+                        -J_nu1
+                        + (nu*(1-eps_interp(N))*J_nu)/(Yeff*(1-eps_interp(N)))
                     )
                 )
             )
 
-            iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Ynu(nu, Yeff)
+            iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * Y_nu
             # diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Ynu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
             diu_init = imu_init[1] = (
                 0.5 * np.sqrt(np.pi/k) * 
                 (k/(spec_params.a_init*np.exp(-N)*H_interp(N))) * (
-                    _ufuncs.sf_bessel_Ynu(nu, Yeff)/(2*np.sqrt(Yeff)) +
+                    Y_nu/(2*np.sqrt(Yeff)) +
                     np.sqrt(Yeff) * (
-                        -_ufuncs.sf_bessel_Ynu(nu+1, Yeff) + (nu*(1-eps_interp(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1-eps_interp(N)))
+                        -Y_nu1 + (nu*(1-eps_interp(N))*Y_nu)/(Yeff*(1-eps_interp(N)))
                     )
                 )
             )
         else:
-            ru_init = realu_init[0] = -0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Ynu(nu, Yeff)
+            ru_init = realu_init[0] = -0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * Y_nu
             # dru_init = realu_init[1] = -0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Ynu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
             dru_init = realu_init[1] = (
                 -0.5 * np.sqrt(np.pi/k) * 
                 (k/(spec_params.a_init*np.exp(-N)*H_interp(N))) * (
-                    _ufuncs.sf_bessel_Ynu(nu, Yeff)/(2.*np.sqrt(Yeff)) +
+                    Y_nu/(2.*np.sqrt(Yeff)) +
                     np.sqrt(Yeff) * (
-                        -_ufuncs.sf_bessel_Ynu(nu+1, Yeff) + (nu*(1-eps_interp(N))*_ufuncs.sf_bessel_Ynu(nu, Yeff))/(Yeff*(1-eps_interp(N)))
+                        -Y_nu1 + (nu*(1-eps_interp(N))*Y_nu)/(Yeff*(1-eps_interp(N)))
                     )
                 )
             )
 
-            iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * _ufuncs.sf_bessel_Jnu(nu, Yeff)
+            iu_init = imu_init[0] = 0.5 * np.sqrt(np.pi/k) * np.sqrt(Yeff) * J_nu
             # diu_init = imu_init[1] = 0.5 * np.sqrt(np.pi/k) * (k/(spec_params.a_init*np.exp(-N)*spline1.eval(N))) * (_ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff))+(np.sqrt(Yeff)*(-_ufuncs.sf_bessel_Jnu(nu+1., Yeff)+(nu*(1.-spline2.eval(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1.-spline2.eval(N))))))
             diu_init = imu_init[1] = (
                 0.5 * np.sqrt(np.pi/k) * 
                 (k/(spec_params.a_init*np.exp(-N)*H_interp(N))) * (
-                    _ufuncs.sf_bessel_Jnu(nu, Yeff)/(2.*np.sqrt(Yeff)) +
+                    J_nu/(2.*np.sqrt(Yeff)) +
                     np.sqrt(Yeff) * (
-                        -_ufuncs.sf_bessel_Jnu(nu+1, Yeff)+(nu*(1-eps_interp(N))*_ufuncs.sf_bessel_Jnu(nu, Yeff))/(Yeff*(1-eps_interp(N)))
+                        -J_nu1+(nu*(1-eps_interp(N))*J_nu)/(Yeff*(1-eps_interp(N)))
                     )
                 )
             )
