@@ -1,18 +1,21 @@
 import numpy as np
+import numba
 # import pygsl.odeiv as odeiv
+
+from numba import float64, complex128, types, typed, typeof
+from numba import vectorize
 
 from scipy.integrate import solve_ivp
 from scipy.interpolate import CubicSpline
 from scipy.optimize import root_scalar, root
 from scipy.special import jv, yv
 
-from interpolate import cubic_spline
+from interpolate import CubicSpline
+from interpolate import cubic_spline, calc_spline_params, piece_wise_spline
 
 from calcpath import *
 
-import matplotlib.pyplot as plt
-
-import numba
+# import matplotlib.pyplot as plt
 
 knos = 1575 # total number of k-values to evaluate
 kinos = 214 # total number of k-values to use for integration
@@ -34,36 +37,24 @@ class params:
         # self.xi = None
 
 
-# def cubic_spline(x, y):
-#     interp = CubicSpline(x.copy(), y.copy(), bc_type='natural')
-
-#     return interp
-
-def frac_diff(x, y):
-    res = np.abs((x-y)/x)
-
-    return res
-
 def ode_eq_solver(
     N_init,
     u_init,
     step,
     fun,
     event_fun,
-    k,
-    params,
+    fun_args,
     rtol,
     atol,
 ):
     solution = solve_ivp(
-        lambda t, y: fun(t, y, k, params),
+        fun,
         (N_init, 0),
         u_init,
-        method='RK45',
-        # dense_output=True,
+        method = 'RK45',
         events=event_fun,
         first_step=step,
-        # args=(spec_params),
+        args = fun_args,
         vectorized=True,
         rtol=rtol,
         atol=atol,
@@ -73,15 +64,13 @@ def ode_eq_solver(
 
 def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     h = 0.01
-    h2 = 1.e-6 # init step size for mode integration
+    h2 = 1e-6
 
-    abserr1 = 1.e-8 # absolute error tolerance - DO NOT ADJUST THESE VALUES!
-    relerr1 = 1.e-8 # relative error tolerance
+    abserr1 = 1e-8
+    relerr1 = 1e-8
 
-    abserr2 = 1e-10 # absolute error tolerance
-    relerr2 = 1e-10 # relative error tolerance
-
-    spec_params = params()
+    abserr2 = 1e-10
+    relerr2 = 1e-10
 
     try:
         ks = np.loadtxt(k_file)
@@ -106,8 +95,7 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     Units are hM_PL
     """
     Ninit = N
-    spec_params.a_init = (1.73e-61/y[1]) * np.exp(Ninit)
-    spec_params.k = None
+    a_init = (1.73e-61/y[1]) * np.exp(Ninit)
 
     """
     To improve stability/efficiency, we first generate an interpolating 
@@ -126,7 +114,7 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     Nfinal = N
 
     def BD_limit(N, y):
-        res = (kis[0]*5.41e-58) / (spec_params.a_init*np.exp(-N)*y[1]) - Y
+        res = (kis[0]*5.41e-58) / (a_init*np.exp(-N)*y[1]) - Y
 
         return res
     
@@ -160,17 +148,11 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     path generation only)
     """
 
-    phi_interp = cubic_spline(Nefolds, phi)
-    H_interp = cubic_spline(Nefolds, H)
-    eps_interp = cubic_spline(Nefolds, eps)
-    sig_interp = cubic_spline(Nefolds, sig)
-    xi_interp = cubic_spline(Nefolds, xi)
-
-    # phi_interp_new = cubic_spline_new(Nefolds, phi)
-    # H_interp_new = cubic_spline_new(Nefolds, H)
-    # eps_interp_new = cubic_spline_new(Nefolds, eps)
-    # sig_interp_new = cubic_spline_new(Nefolds, sig)
-    # xi_interp_new = cubic_spline_new(Nefolds, xi)
+    phi_interp = CubicSpline(Nefolds, phi)
+    H_interp = CubicSpline(Nefolds, H)
+    eps_interp = CubicSpline(Nefolds, eps)
+    sig_interp = CubicSpline(Nefolds, sig)
+    xi_interp = CubicSpline(Nefolds, xi)
 
     k_Planck = kis * 5.41e-58
     N = Ninit * np.ones(k_Planck.size)
@@ -191,8 +173,8 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             (
                 k_Planck
                 / (
-                    spec_params.a_init * np.exp(-N)
-                    * H_interp(N) * (1-eps_interp(N))
+                    a_init * np.exp(-N)
+                    * H_interp.eval(N) * (1-eps_interp.eval(N))
                 )
             )
             - Y
@@ -209,11 +191,11 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
 
     N = BD_limit_sol.x
 
-    H = H_interp(N)
-    eps = eps_interp(N)
+    H = H_interp.eval(N)
+    eps = eps_interp.eval(N)
 
     nu = (3 - eps) / (2 * (1 - eps))
-    Y_eff = k_Planck / (spec_params.a_init * np.exp(-N) * H * (1-eps))
+    Y_eff = k_Planck / (a_init * np.exp(-N) * H * (1-eps))
 
     J_nu = jv(nu, Y_eff)
     J_nu1 = jv(nu+1, Y_eff)
@@ -228,7 +210,7 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         0.5 * np.sqrt(np.pi / k_Planck) * np.sqrt(Y_eff) * J_Y_nu,
         (
             0.5 * np.sqrt(np.pi / k_Planck)
-            * (k_Planck / (spec_params.a_init * np.exp(-N) * H)) * (
+            * (k_Planck / (a_init * np.exp(-N) * H)) * (
                 J_Y_nu / (2 * np.sqrt(Y_eff)) 
                 + np.sqrt(Y_eff) * (
                     - J_Y_nu1
@@ -239,13 +221,19 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
     ])
 
     u_init[:, np.where(eps >= 1)] *= -1j
-
-    spec_params.fH = H_interp
-    spec_params.feps = eps_interp
-    spec_params.fsig = sig_interp
-    spec_params.fxi = xi_interp
     
-    def Nfinal_event(N, y):
+    # @numba.njit(
+    #     float64(
+    #         float64,
+    #         complex128[:,:],
+    #         float64,
+    #         float64,
+    #         types.ListType(CubicSpline.class_type.instance_type),
+    #     ),
+    #     cache = True,
+    #     fastmath = True,
+    # )
+    def Nfinal_event(N, y, a_init, k, interps):
         return N - Nfinal
 
     Nfinal_event.terminal = True
@@ -262,10 +250,13 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             N[i],
             u_init[:, i],
             h2,
-            scalarsys2,
+            scalarsys,
             Nfinal_event,
-            k_Planck[i],
-            spec_params,
+            (
+                a_init,
+                k_Planck[i],
+                typed.List([H_interp, eps_interp, sig_interp, xi_interp])
+            ),
             relerr2,
             abserr2,
         )
@@ -280,8 +271,8 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             * u2_s
             / (
                 (
-                    ((spec_params.a_init*np.exp(-N_val))**2)
-                    * eps_interp(N_val)[()]
+                    ((a_init*np.exp(-N_val))**2)
+                    * eps_interp.eval(N_val)[()]
                 )
                 / (4*np.pi)
             )
@@ -295,10 +286,13 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
             N[i],
             u_init[:, i],
             h2,
-            tensorsys2,
+            tensorsys,
             Nfinal_event,
-            k_Planck[i],
-            spec_params,
+            (
+                a_init,
+                k_Planck[i],
+                typed.List([H_interp, eps_interp, sig_interp, xi_interp])
+            ),
             relerr2,
             abserr2,
         )
@@ -307,9 +301,9 @@ def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
         u2_t = np.abs(solution_t.y[0,-1])**2
 
         P_t[i] = (
-            64 * np.pi * (k**3/(2*np.pi**2))
+            64 * np.pi * (k**3 / (2 * np.pi**2))
             * u2_t
-            / (spec_params.a_init*np.exp(-N_val))**2
+            / (a_init * np.exp(-N_val))**2
         )
     
     status = 0
@@ -354,111 +348,103 @@ def derivs1(t, y, dydN):
 
     return dydN
 
+@numba.njit(
+    cache = True,
+    fastmath = True,
+)
 def derivs2(N, y):
-    dydN = np.zeros(NEQS, dtype=float, order='C')
+    dy_dN = np.zeros(NEQS)
     
     if y[2] > VERYSMALLNUM:
-        dydN[0]= - np.sqrt(y[2]/(4*np.pi))
+        dy_dN[0]= - np.sqrt(y[2]/(4*np.pi))
     else:
-        dydN[0] = 0
+        dy_dN[0] = 0
 
-    dydN[1] = y[1] * y[2]
-    dydN[2] = y[2] * (y[3]+2.*y[2])
-    dydN[3] = 2.*y[4] - 5.*y[2]*y[3] - 12.*y[2]*y[2]
+    dy_dN[1] = y[1] * y[2]
+    dy_dN[2] = y[2] * (y[3]+2*y[2])
+    dy_dN[3] = 2*y[4] - 5*y[2]*y[3] - 12*y[2]*y[2]
     
     for i in range(4, NEQS-1):
-         dydN[i] = (0.5*(i-3)*y[3]+(i-4)*y[2])*y[i] + y[i+1]
+        dy_dN[i] = (0.5*(i-3)*y[3]+(i-4)*y[2])*y[i] + y[i+1]
 
-    dydN[NEQS-1] = (0.5*(NEQS-4)*y[3]+(NEQS-5)*y[2]) * y[NEQS-1]
+    dy_dN[NEQS-1] = (0.5*(NEQS-4)*y[3]+(NEQS-5)*y[2]) * y[NEQS-1]
 
-    return dydN
+    return dy_dN
 
+@numba.njit(
+    complex128[:](
+        float64,
+        complex128[:,:],
+        float64,
+        float64,
+        types.ListType(CubicSpline.class_type.instance_type),
+    ),
+    cache = True,
+    fastmath = True,
+)
 def scalarsys(
     N,
     y,
-    params,
-):
-    H = params.fH(N)[()]
-    eps = params.feps(N)[()]
-    sig = params.fsig(N)[()]
-    xi = params.fxi(N)[()]
+    a_init,
+    k,
+    interps,
+): 
+    H_interp, eps_interp, sig_interp, xi_interp = interps
 
-    dy_dN = np.array([
-        y[1],
-        (
-            (1-eps) * y[1]
-            - (
-                (params.k**2) / ((params.a_init**2)*np.exp(-2*N)*(H**2))
-                - 2 * (1 - 2*eps - 0.75*sig - eps**2 + 0.125*sig**2 + 0.5*xi)
-            ) * y[0]
-        ),
-    ])
+    H = H_interp.eval(N)
+    eps = eps_interp.eval(N)
+    sig = sig_interp.eval(N)
+    xi = xi_interp.eval(N)
+
+    y = y.ravel()
+
+    dy_dN = np.zeros(2, dtype=np.complex128)
+
+    dy_dN[0] = y[1]
+    dy_dN[1] = (
+        (1-eps) * y[1]
+        - (
+            (k**2) / ((a_init**2)*np.exp(-2*N)*(H**2))
+            - 2 * (1 - 2*eps - 0.75*sig - eps**2 + 0.125*sig**2 + 0.5*xi)
+        ) * y[0]
+    )
 
     return dy_dN
 
-def scalarsys2(
+@numba.njit(
+    complex128[:](
+        float64,
+        complex128[:,:],
+        float64,
+        float64,
+        types.ListType(CubicSpline.class_type.instance_type),
+    ),
+    cache = True,
+    fastmath = True,
+)
+def tensorsys(
     N,
     y,
+    a_init,
     k,
-    params,
+    interps,
 ):
-    H = params.fH(N)[()]
-    eps = params.feps(N)[()]
-    sig = params.fsig(N)[()]
-    xi = params.fxi(N)[()]
+    H_interp, eps_interp, sig_interp, xi_interp = interps
 
-    params.k = k
+    H = H_interp.eval(N)
+    eps = eps_interp.eval(N)
 
-    dy_dN = np.array([
-        y[1],
-        (
-            (1-eps) * y[1]
-            - (
-                (params.k**2) / ((params.a_init**2)*np.exp(-2*N)*(H**2))
-                - 2 * (1 - 2*eps - 0.75*sig - eps**2 + 0.125*sig**2 + 0.5*xi)
-            ) * y[0]
-        ),
-    ])
+    y = y.ravel()
+    
+    dy_dN = np.zeros(2, dtype=np.complex128)
 
-    return dy_dN
-
-def tensorsys(N, y, params):
-    H = params.fH(N)[()]
-    eps = params.feps(N)[()]
-
-    dy_dN = np.array([
-        y[1],
-        (
-            (1-eps)*y[1]
-            - (
-                (params.k**2) / ((params.a_init**2)*np.exp(-2*N)*(H**2))
-                - (2 - eps)
-            ) * y[0]
-        ),
-    ])
-
-    return dy_dN
-
-def tensorsys2(
-    N,
-    y,
-    k,
-    params
-):
-    H = params.fH(N)[()]
-    eps = params.feps(N)[()]
-
-    params.k = k
-
-    dy_dN = np.array([
-        y[1],
-        (
-            (1-eps)*y[1]
-            - (
-                (params.k**2) / ((params.a_init**2)*np.exp(-2*N)*(H**2))
-                - (2 - eps)
-            ) * y[0]
-        ),
-    ])
+    dy_dN[0] = y[1]
+    dy_dN[1] = (
+        (1-eps)*y[1]
+        - (
+            (k**2) / ((a_init**2)*np.exp(-2*N)*(H**2))
+            - (2 - eps)
+        ) * y[0]
+    )
 
     return dy_dN
