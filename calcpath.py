@@ -1,13 +1,13 @@
 import numpy as np
+import numba
 
 from MacroDefinitions import *
 from int_de import *
 
-NEQS = 8
 kmax = 20000
 
 SMALLNUM = 0.0001
-VERYSMALLNUM = 1e-18
+
 LOTSOFEFOLDS = 1000.0
 
 c = 0.0814514 # = 4 (ln(2)+\gamma)-5, \gamma = 0.5772156649
@@ -109,27 +109,53 @@ def calcpath(Nefolds, y, path, N, calc):
 
     return retval
 
-def derivs(t, y, dydN):
-    dydN = np.zeros(NEQS, dtype=float, order='C')
+# def derivs(t, y, dydN):
+#     dydN = np.zeros(NEQS, dtype=float, order='C')
+    
+#     if y[2] >= 1.0:
+#         dydN = np.zeros(NEQS , dtype=float , order='C')
+#     else:
+#         if y[2] > VERYSMALLNUM:
+#             dydN[0] = - np.sqrt(y[2] / (4 * np.pi))
+#         else:
+#             dydN[0] = 0.0
+        
+#         dydN[1] = y[1] * y[2]
+#         dydN[2] = y[2] * (y[3] + 2.0 * y[2])
+#         dydN[3] = 2. * y[4] - 5. * y[2] * y[3] - 12. * y[2] * y[2]
+        
+#         for i in range(4, NEQS-1):
+#             dydN[i] = ( 0.5 * (i-3) * y[3] + (i-4) * y[2] ) * y[i] + y[i+1]
+            
+#         dydN[NEQS-1] = ( 0.5 * (NEQS-4) * y[3] + (NEQS-5) * y[2] ) * y[NEQS-1]
+
+#     return dydN
+
+@numba.njit(
+    cache = True,
+    fastmath = True,
+)
+def derivs(t, y):
+    dy_dN = np.zeros(NEQS)
     
     if y[2] >= 1.0:
-        dydN = np.zeros(NEQS , dtype=float , order='C')
+        dy_dN = np.zeros(NEQS)
     else:
         if y[2] > VERYSMALLNUM:
-            dydN[0] = - np.sqrt(y[2] / (4 * np.pi))
+            dy_dN[0] = - np.sqrt(y[2] / (4 * np.pi))
         else:
-            dydN[0] = 0.0
+            dy_dN[0] = 0.0
         
-        dydN[1] = y[1] * y[2]
-        dydN[2] = y[2] * (y[3] + 2.0 * y[2])
-        dydN[3] = 2. * y[4] - 5. * y[2] * y[3] - 12. * y[2] * y[2]
+        dy_dN[1] = y[1] * y[2]
+        dy_dN[2] = y[2] * (y[3] + 2.0 * y[2])
+        dy_dN[3] = 2. * y[4] - 5. * y[2] * y[3] - 12. * y[2] * y[2]
         
         for i in range(4, NEQS-1):
-            dydN[i] = ( 0.5 * (i-3) * y[3] + (i-4) * y[2] ) * y[i] + y[i+1]
+            dy_dN[i] = ( 0.5 * (i-3) * y[3] + (i-4) * y[2] ) * y[i] + y[i+1]
             
-        dydN[NEQS-1] = ( 0.5 * (NEQS-4) * y[3] + (NEQS-5) * y[2] ) * y[NEQS-1]
+        dy_dN[NEQS-1] = ( 0.5 * (NEQS-4) * y[3] + (NEQS-5) * y[2] ) * y[NEQS-1]
 
-    return dydN
+    return dy_dN
 
 def check_convergence(yy, kount):
     for i in range(kount):
@@ -165,7 +191,8 @@ def dspecindex(y):
     ydoub = y.copy()
 
     dydN = np.zeros(NEQS)
-    dydN = derivs(0, ydoub, dydN)
+    # dydN = derivs(0, ydoub, dydN)
+    dydN = derivs(0, ydoub)
 
     y = ydoub.copy()
 

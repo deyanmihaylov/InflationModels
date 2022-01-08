@@ -7,22 +7,12 @@ from calcpath import *
 from int_de import *
 if SPECTRUM: from spectrum import *
 
-import pygsl.rng
+# import pygsl.rng
 
-my_random = pygsl.rng.ranlxd2()
-my_random.set(0)
+# my_random = pygsl.rng.ranlxd2()
+# my_random.set(0)
 
 np.random.seed(0)
-
-NMAX = 1.5
-NMIN = 0.5
-
-OUTFILE1_NAME = "nr.dat"
-OUTFILE2_NAME = "esigma.dat"
-NUMPOINTS = 20000
-
-NUMEFOLDSMAX = 60.
-NUMEFOLDSMIN = 46.
 
 if SAVEPATHS is True:
     PRINTEVERY = 100
@@ -39,19 +29,33 @@ class Calc:
 def pick_init_vals():
     init_vals = np.zeros(NEQS, dtype=float, order='C')
     
+    # init_vals[0] = 0.0
+    # init_vals[1] = 1.0
+    # init_vals[2] = my_random.uniform() * 0.8
+    # init_vals[3] = my_random.uniform() - 0.5
+    # init_vals[4] = my_random.uniform()*0.1 - 0.05
+
+    # prefact = 0.05
+    
+    # for i in range (5 , NEQS):
+    #     init_vals[i] = my_random.uniform() * prefact - (0.5*prefact)
+    #     prefact *= 0.1
+        
+    # init_Nefolds = my_random.uniform() * (NUMEFOLDSMAX - NUMEFOLDSMIN) + NUMEFOLDSMIN
+
     init_vals[0] = 0.0
     init_vals[1] = 1.0
-    init_vals[2] = my_random.uniform() * 0.8
-    init_vals[3] = my_random.uniform() - 0.5
-    init_vals[4] = my_random.uniform()*0.1 - 0.05
+    init_vals[2] = np.random.uniform() * 0.8
+    init_vals[3] = np.random.uniform() - 0.5
+    init_vals[4] = np.random.uniform()*0.1 - 0.05
 
     prefact = 0.05
     
     for i in range (5 , NEQS):
-        init_vals[i] = my_random.uniform() * prefact - (0.5*prefact)
+        init_vals[i] = np.random.uniform() * prefact - (0.5*prefact)
         prefact *= 0.1
         
-    init_Nefolds = my_random.uniform() * (NUMEFOLDSMAX - NUMEFOLDSMIN) + NUMEFOLDSMIN
+    init_Nefolds = np.random.uniform() * (NUMEFOLDSMAX - NUMEFOLDSMIN) + NUMEFOLDSMIN
     
     return init_vals, init_Nefolds
 
@@ -153,8 +157,11 @@ def main():
 
     savedone = 0
 
+    initial_conds = np.genfromtxt(fname = "ics.dat", delimiter=",")
+
     while nontrivcount < NUMPOINTS:
         iters += 1
+        if iters < 120: continue
         if iters > 200:
             exit()
         print(iters)
@@ -166,7 +173,9 @@ def main():
             else:
                 print(".")
 
-        yinit, calc.Nefolds = pick_init_vals()
+        # yinit, calc.Nefolds = pick_init_vals()
+        yinit = initial_conds[iters-1, 0:-1]
+        calc.Nefolds = initial_conds[iters-1, -1]
 
         # remove when spectrum code is finished
         # if iters < 121:
@@ -239,6 +248,7 @@ def main():
                     y_final[NEQS] = N[3]
 
                     spectrum_status = spectrum(y_final, y, u_s, u_t, calc.Nefolds, derivs1, scalarsys, tensorsys)
+                    print(spectrum_status)
 
                     if spectrum_status:
                         errcount += 1
@@ -263,9 +273,9 @@ def main():
 
         if SAVEPATHS is True:
             """
-            Check to see if initial data yielded suitable results for the
-            entire path to be generated and saved.  If so, the initial data
-            are stored in temporary buffers.
+            Check to see if initial data yielded suitable results for
+            the entire path to be generated and saved.  If so, the
+            initial data are stored in temporary buffers.
             """
             if SPECTRUM is True:
                 # if we calc spectrum, we want path
@@ -297,7 +307,7 @@ def main():
 
     print("Done. points = " + str(points) + ", iters = " + str(iters) + ", errcount = " + str(errcount))
     print("asymcount = " + str(asymcount) + ", nontrivcount = " + str(nontrivcount) + ", insuffcount = " + str(insuffcount) + ", noconvcount = " + str(noconvcount) + ", badncount = " + str(badncount) + ", errcount = " + str(errcount))
-    
+
     outfile1.close()
     outfile2.close()
 
