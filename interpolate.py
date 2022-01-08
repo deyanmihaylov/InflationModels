@@ -1,6 +1,29 @@
 import numpy as np
 import numba
-    
+from numba.experimental import jitclass
+from numba import float64
+
+
+spec = [
+    ('x0', float64[:]),
+    ('a', float64[:]),
+    ('b', float64[:]),
+    ('c', float64[:]),
+    ('d', float64[:]),
+]
+
+@jitclass(
+    spec,
+)
+class CubicSpline(object):
+    def __init__(self, x0, y0):
+        self.x0 = x0
+        self.a, self.b, self.c, self.d = calc_spline_params(x0, y0)
+
+    def eval(self, x):
+        return piece_wise_spline(x, self.x0, self.a, self.b, self.c, self.d)
+
+
 """
 Calculate the parameters a, b, c, d of a natural cubic spline
 """
