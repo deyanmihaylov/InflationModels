@@ -32,7 +32,10 @@ Calculate the parameters a, b, c, d of a natural cubic spline
     cache = True,
     fastmath = True,
 )
-def calc_spline_params(x, y):
+def calc_spline_params(
+    x,
+    y,
+):
     n = x.size - 1
     a = y.copy()
     h = x[1:] - x[:-1]
@@ -57,7 +60,15 @@ Calculate the value of a cubic spline value
     cache = True,
     fastmath = True,
 )
-def func_spline(x, ix, x0, a, b, c, d):
+def func_spline(
+    x,
+    ix,
+    x0,
+    a,
+    b,
+    c,
+    d,
+):
     dx = x - x0[1:][ix]
     return a[ix] + (b[ix] + (c[ix] + d[ix] * dx) * dx) * dx
 
@@ -66,7 +77,11 @@ def func_spline(x, ix, x0, a, b, c, d):
     cache = True,
     fastmath = True,
 )
-def searchsorted_merge(a, b, sort_b):
+def searchsorted_merge(
+    a,
+    b,
+    sort_b,
+):
     idx = np.zeros((len(b),), dtype = np.int64)
     if sort_b:
         ib = np.argsort(b)
@@ -87,7 +102,14 @@ Compute piece-wise spline function for "x" out of sorted "x0" points
     cache = True,
     fastmath = True,
 )
-def piece_wise_spline(x, x0, a, b, c, d):
+def piece_wise_spline(
+    x,
+    x0,
+    a,
+    b,
+    c,
+    d,
+):
     x = np.asarray(x)
     xsh = x.shape
     x = x.ravel()
@@ -99,7 +121,10 @@ def piece_wise_spline(x, x0, a, b, c, d):
 """
 Generate a cubic spline interpolator
 """
-def cubic_spline(x0, y0):
+def cubic_spline(
+    x0,
+    y0,
+):
     a, b, c, d = calc_spline_params(x0, y0)
     return lambda x: piece_wise_spline(x, x0, a, b, c, d)
 

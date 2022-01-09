@@ -59,7 +59,11 @@ def pick_init_vals():
     
     return init_vals, init_Nefolds
 
-def we_should_save_this_path(retval, save, pointcount):
+def we_should_save_this_path(
+    retval,
+    save,
+    pointcount,
+):
     if ((retval == "asymptote" or retval == "nontrivial") and not(save)):
         if not(pointcount % PRINTEVERY):
             return True
@@ -68,13 +72,20 @@ def we_should_save_this_path(retval, save, pointcount):
     else:
         return False
 
-def we_should_calc_spec(y):
+def we_should_calc_spec(
+    y,
+):
     if (specindex(y) > 0.8 and specindex(y) < 1.2):
         return True
     else:
         return False
 
-def save_path(y, N, kount, fname):
+def save_path(
+    y,
+    N,
+    kount,
+    fname,
+):
     # Open output file
     try:
         outfile = open(fname, "w")

@@ -9,7 +9,13 @@ kmax = 20000
 # c = 0.0814514 # = 4 (ln(2)+\gamma)-5, \gamma = 0.5772156649
 c = 4 * (np.log(2) + np.euler_gamma) - 5
 
-def calcpath(Nefolds, y, path, N, calc):
+def calcpath(
+    Nefolds,
+    y,
+    path,
+    N,
+    calc,
+):
     retval = "internal_error"
     i = None
     j = None

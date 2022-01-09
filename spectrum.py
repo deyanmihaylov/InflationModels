@@ -62,7 +62,16 @@ def ode_eq_solver(
 
     return solution
 
-def spectrum(y_final, y, u_s, u_t, N, derivs1, scalarsys, tensorsys):
+def spectrum(
+    y_final,
+    y,
+    u_s,
+    u_t,
+    N,
+    derivs1,
+    scalarsys,
+    tensorsys,
+):
     h = 0.01
     h2 = 1e-6
 
