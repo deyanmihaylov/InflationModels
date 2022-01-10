@@ -25,8 +25,6 @@ Y = 50 # Y = value of k/aH at which to initialize mode fcns
 knorm = 0.05 # normalization scale
 Amp = 2.0803249e-9 # scalar amplitude at knorm
 
-VERYSMALLNUM = 1.E-18
-
 class params:
     def __init__(self):
         self.a_init = None # initial val of the scale factor

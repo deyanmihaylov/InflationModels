@@ -101,9 +101,9 @@ def save_path(
         outfile.write("%lf " % (N[i]))
 
         # Calculate "reconstructed" value of the potential, in Planck units.
-        V = (3./(8.*np.pi)) * y[1, i] * y[1, i] * (1.-y[2, i]/3.)
+        V = (3/(8*np.pi)) * y[1, i] * y[1, i] * (1 - y[2, i]/3)
         outfile.write("%le " % (V))
-        outfile.write("%le\n" % ((V*y[2, i]) / (3.-y[2, i])))
+        outfile.write("%le\n" % ((V * y[2, i]) / (3 - y[2, i])))
 
     outfile.close()
 
@@ -169,10 +169,10 @@ def main():
     savedone = 0
 
     initial_conds = np.genfromtxt(fname = "ics.dat", delimiter=",")
-
+    
     while nontrivcount < NUMPOINTS:
         iters += 1
-        if iters < 120: continue
+        # if iters < 120: continue
         if iters > 200:
             exit()
         print(iters)
@@ -188,21 +188,20 @@ def main():
         yinit = initial_conds[iters-1, 0:-1]
         calc.Nefolds = initial_conds[iters-1, -1]
 
-        # remove when spectrum code is finished
-        # if iters < 121:
-        #     continue
-
         y = yinit.copy()
 
         calc.ret = calcpath(calc.Nefolds, y, path, N, calc)
         print(calc.ret)
 
         if calc.ret == "asymptote":
-            # Check to see if the spectral index is within the slow roll range
+            """
+            Check to see if the spectral index is within the slow roll range
+            """
             if specindex(y) >= NMIN and specindex(y) <= NMAX:
-                # Output final values, outfile1 contains
-                # observables r, n,  dn/dlog(k), outfile2 countains
-                # epsilon, sigma, xsi.
+                """
+                Output final values, outfile1 contains observables r, n,
+                dn/dlog(k), outfile2 countains epsilon, sigma, xsi.
+                """
                 asymcount += 1
 
                 outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
@@ -217,7 +216,9 @@ def main():
                 points += 1
                 savedone = 0
             else:
-                # Spectral index out of range
+                """
+                Spectral index out of range
+                """
                 badncount += 1
         elif calc.ret == "nontrivial":
             outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
@@ -243,37 +244,26 @@ def main():
 
                     spec_count += 1
 
-                    # try:
-                    #     spec_s = open(specnum_s, "w")
-                    # except IOError as e:
-                    #     print(f"Could not open file {specnum_s}, errno = {e}.")
-                    #     sys.exit()
-
-                    # try:
-                    #     spec_t = open(specnum_t, "w")
-                    # except IOError as e:
-                    #     print(f"Could not open file {specnum_t}, errno = {e}.")
-                    #     sys.exit()
-
                     y_final[:NEQS] = path[:NEQS, 3]
                     y_final[NEQS] = N[3]
 
-                    spectrum_status = spectrum(y_final, y, u_s, u_t, calc.Nefolds, derivs1, scalarsys, tensorsys)
+                    spectrum_status = spectrum(
+                        y_final,
+                        y,
+                        u_s,
+                        u_t,
+                        calc.Nefolds,
+                        derivs1,
+                        scalarsys,
+                        tensorsys
+                    )
                     print(spectrum_status)
 
                     if spectrum_status:
                         errcount += 1
 
-                    # Here is where the spectrum files are written. Choose desired format.
-                    # for i in range(knos):
-                    #     spec_s.write("%.15e %.15e\n" % (u_s[0, i], u_s[1, i]))
-                    #     spec_t.write("%.15e %.15e\n" % (u_t[0, i], u_t[1, i]))
-
                     np.savetxt(specnum_s, u_s[:,0:knos].T, fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
                     np.savetxt(specnum_t, u_t[:,0:knos].T, fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
-
-                    # spec_s.close()
-                    # spec_t.close()
 
         elif calc.ret == "insuff":
             insuffcount += 1
@@ -299,8 +289,8 @@ def main():
             if criterion:
                 if SPECTRUM is True:
                     """
-                    If we are calculating spectra, we must normalize H here instead
-                    of in calcpath.c.
+                    If we are calculating spectra, we must normalize H
+                    here instead of in calcpath.c.
                     """
                     for j in range(calc.npoints):
                         path[0, j] = path[0, j] - path[0, calc.npoints-1]

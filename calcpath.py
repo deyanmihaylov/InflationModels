@@ -78,9 +78,11 @@ def calcpath(
             else:
                 retval = "nontrivial"
 
-    # Normalize H to give the correct CMB amplitude.  If we are not interested in generating power
-    # spectra, normalizing H to give CMB amplitude of 10^-5 at horizon crossing (N = Nefolds) is
-    # sufficient
+    """
+    Normalize H to give the correct CMB amplitude. If we are not
+    interested in generating power spectra, normalizing H to give CMB
+    amplitude of 10^-5 at horizon crossing (N = Nefolds) is sufficient.
+    """
 
     if SPECTRUM == False:
         if retval == "nontrivial":
@@ -139,7 +141,7 @@ def calcpath(
     fastmath = True,
 )
 def derivs(
-    t,
+    N,
     y,
 ):
     dy_dN = np.zeros(NEQS)
