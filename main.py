@@ -1,63 +1,65 @@
 import numpy as np
 import sys
-from scipy.integrate import solve_ivp
+
+import numba
+from numba import types, float64, uint64
+from numba.experimental import jitclass
 
 from MacroDefinitions import *
-from calcpath import *
+from calcpath import calculate_path
 from int_de import *
 if SPECTRUM: from spectrum import *
 
-# import pygsl.rng
+if SAVEPATHS is True: PRINTEVERY = 100
 
-# my_random = pygsl.rng.ranlxd2()
-# my_random.set(0)
-
-np.random.seed(0)
-
-if SAVEPATHS is True:
-    PRINTEVERY = 100
-
+@jitclass(
+    [
+        ('Y', float64[:]),
+        ('initY', float64[:]),
+        ('ret', types.unicode_type),
+        ('npoints', uint64),
+        ('y_init', float64[:]),
+        ('N_efolds', float64),
+    ],
+)
 class Calc:
     def __init__(self):
-        self.Y = np.zeros(NEQS, dtype=float, order='C')
-        self.initY = np.zeros(NEQS, dtype=float, order='C')
+        self.Y = np.zeros(NEQS)
+        self.initY = np.zeros(NEQS)
         self.ret = ""
         self.npoints = 0
-        self.Nefolds = 0.0
+        self.y_init = np.zeros(NEQS)
+        self.N_efolds = 0.0
+
+        # self.init_vals()
+
+    def init_vals(self):
+        self.y_init, self.N_efolds = _pick_init_vals()
 
 
-def pick_init_vals():
-    init_vals = np.zeros(NEQS, dtype=float, order='C')
-    
-    # init_vals[0] = 0.0
-    # init_vals[1] = 1.0
-    # init_vals[2] = my_random.uniform() * 0.8
-    # init_vals[3] = my_random.uniform() - 0.5
-    # init_vals[4] = my_random.uniform()*0.1 - 0.05
-
-    # prefact = 0.05
-    
-    # for i in range (5 , NEQS):
-    #     init_vals[i] = my_random.uniform() * prefact - (0.5*prefact)
-    #     prefact *= 0.1
-        
-    # init_Nefolds = my_random.uniform() * (NUMEFOLDSMAX - NUMEFOLDSMIN) + NUMEFOLDSMIN
+@numba.njit(
+    cache = True,
+    fastmath = True,
+)
+def _pick_init_vals():
+    np.random.seed(0)
+    init_vals = np.zeros(NEQS)
 
     init_vals[0] = 0.0
     init_vals[1] = 1.0
-    init_vals[2] = np.random.uniform() * 0.8
-    init_vals[3] = np.random.uniform() - 0.5
-    init_vals[4] = np.random.uniform()*0.1 - 0.05
+    init_vals[2] = np.random.uniform(0, 0.8)
+    init_vals[3] = np.random.uniform(-0.5, 0.5)
+    init_vals[4] = np.random.uniform(-0.05, 0.05)
 
-    prefact = 0.05
+    width = 0.05
     
-    for i in range (5 , NEQS):
-        init_vals[i] = np.random.uniform() * prefact - (0.5*prefact)
-        prefact *= 0.1
+    for i in range(5 , NEQS):
+        init_vals[i] = np.random.uniform(-0.5*width, 0.5*width)
+        width *= 0.1
         
-    init_Nefolds = np.random.uniform() * (NUMEFOLDSMAX - NUMEFOLDSMIN) + NUMEFOLDSMIN
+    init_N_efolds = np.random.uniform(NUM_EFOLDS_MIN, NUM_EFOLDS_MAX)
     
-    return init_vals, init_Nefolds
+    return init_vals, init_N_efolds
 
 def we_should_save_this_path(
     retval,
@@ -72,13 +74,37 @@ def we_should_save_this_path(
     else:
         return False
 
-def we_should_calc_spec(
+@numba.njit(
+    cache = True,
+    fastmath = True,
+)
+def check_calculate_spectrum(
     y,
 ):
-    if (specindex(y) > 0.8 and specindex(y) < 1.2):
+    n = spectral_index(y)
+    if 0.8 < n < 1.2:
         return True
     else:
         return False
+
+def save_data(
+    file_name,
+    data,
+    format = '%.15e',
+    delimiter = ',',
+    header = "",
+):
+    np.savetxt(
+        file_name,
+        data,
+        fmt=format,
+        delimiter=delimiter,
+        newline='\n',
+        header=header,
+        footer='',
+        comments='# ',
+        encoding=None,
+    )
 
 def save_path(
     y,
@@ -86,43 +112,13 @@ def save_path(
     kount,
     fname,
 ):
-    # Open output file
-    try:
-        outfile = open(fname, "w")
-    except IOError as e:
-        print("Could not open file " + fname + ", errno = " + e + ".")
-        sys.exit()
+    V = (3/(8*np.pi)) * y[1] * y[1] * (1 - y[2]/3)
+    V1 = (V * y[2]) / (3 - y[2])
 
-    # Output intermediate data from the integration
-    for i in range(kount):
-        for j in range(NEQS):
-            outfile.write("%le " % (y[j, i]))
-
-        outfile.write("%lf " % (N[i]))
-
-        # Calculate "reconstructed" value of the potential, in Planck units.
-        V = (3/(8*np.pi)) * y[1, i] * y[1, i] * (1 - y[2, i]/3)
-        outfile.write("%le " % (V))
-        outfile.write("%le\n" % ((V * y[2, i]) / (3 - y[2, i])))
-
-    outfile.close()
+    data_for_output = np.c_[y.T, N, V, V1]
+    save_data(fname, data_for_output, format='%.6e')
 
 def main():
-    calc = Calc()
-
-    if SPECTRUM is True:
-        spectrum_status = None
-
-        u_s = np.empty((2, kmax))
-        u_t = np.empty((2, kmax))
-
-        specnum_s = ""
-        specnum_t = ""
-
-        spec_count = 0
-
-        y_final = np.empty(NEQS + 1)
-
     try:
         outfile1 = open(OUTFILE1_NAME, "w")
     except IOError as e:
@@ -135,76 +131,77 @@ def main():
         print("Could not open file " + OUTFILE2_NAME + ", errno = " + e + ".")
         sys.exit()
 
-    # allocate buffers
-    y = np.zeros(NEQS, dtype=float, order='C')
-    yinit = np.zeros(NEQS, dtype=float, order='C')
-    N = np.array([])
-
-    path = np.array([[]])
-
-    # iters = total number of iterations
+    """
+    iters = total number of iterations
+    points = points saved with n < N_MAX
+    asymcount = points with 0 < n < N_MAX , r = 0
+    nontrivcount = nontrivial points
+    insuffcount = points where slow roll breaks down before N-efolds
+    noconvcount = points that do not converge to either a late time 
+        attractor or end of inflation
+    badncount = points for which n is outside of the bounds
+    """
     iters = 0
-
-    # points = points saved with n < NMAX
     points = 0
-
     errcount = 0
-
     outcount = 0
-
-    # asymcount = points with 0 < n < NMAX , r = 0
     asymcount = 0
-
-    # nontrivcount = nontrivial points
     nontrivcount = 0
-
-    # insuffcount = points where slow roll breaks down before N-efolds
     insuffcount = 0
-
-    # noconvcount = points that do not converge to either a late time attractor or end of inflation
     noconvcount = 0
-
     badncount = 0
-
     savedone = 0
+
+    if SPECTRUM is True:
+        spec_count = 0
 
     initial_conds = np.genfromtxt(fname = "ics.dat", delimiter=",")
     
-    while nontrivcount < NUMPOINTS:
+    while nontrivcount < NUM_POINTS:
         iters += 1
         # if iters < 120: continue
-        if iters > 200:
-            exit()
+        # if iters > 200:
+        #     exit()
         print(iters)
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
-                print("\n asymcount = " + str(asymcount) + ", nontrivcount = " + str(nontrivcount) + ", insuffcount = " + str(insuffcount) + ", noconvcount = " + str(noconvcount) + ", badncount = " + str(badncount) + ", errcount = " + str(errcount))
-                print("\n " + str(iters))
+                print(
+                    f"asymcount = {asymcount},\n"
+                    f"nontrivcount = {nontrivcount},\n"
+                    f"insuffcount = {insuffcount},\n"
+                    f"noconvcount = {noconvcount},\n"
+                    f"badncount = {badncount},\n"
+                    f"errcount = {errcount},\n"
+                    f"iters = {iters}"
+                )
             else:
                 print(".")
 
-        # yinit, calc.Nefolds = pick_init_vals()
-        yinit = initial_conds[iters-1, 0:-1]
-        calc.Nefolds = initial_conds[iters-1, -1]
+        calc = Calc()
+        calc.y_init = initial_conds[iters-1, 0:-1]
+        calc.N_efolds = initial_conds[iters-1, -1]
+        # y = yinit.copy()
 
-        y = yinit.copy()
-
-        calc.ret = calcpath(calc.Nefolds, y, path, N, calc)
-        print(calc.ret)
+        y, N, path, calc.ret = calculate_path(calc)
 
         if calc.ret == "asymptote":
             """
             Check to see if the spectral index is within the slow roll range
             """
-            if specindex(y) >= NMIN and specindex(y) <= NMAX:
+            n = spectral_index(y)
+
+            if N_MIN <= n <= N_MAX:
                 """
                 Output final values, outfile1 contains observables r, n,
                 dn/dlog(k), outfile2 countains epsilon, sigma, xsi.
                 """
                 asymcount += 1
+                
+                r = tensor_scalar_ratio(y)
+                dn_dN = d_spectral_index(y)
 
-                outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
+                outfile1.write("%.10f %.10f %.10f\n" % (r, n, dn_dN))
                 outfile1.flush()
 
                 for i in range(NEQS):
@@ -221,13 +218,16 @@ def main():
                 """
                 badncount += 1
         elif calc.ret == "nontrivial":
-            outfile1.write("%.10f %.10f %.10f\n" % (tsratio(y), specindex(y), dspecindex(y)))
+            r = tensor_scalar_ratio(y)
+            n = spectral_index(y)
+            dn_dN = d_spectral_index(y)
+            outfile1.write("%.10f %.10f %.10f\n" % (r, n, dn_dN))
             outfile1.flush()
 
             for i in range(NEQS):
                 outfile2.write("%le " % (y[i]))
 
-            outfile2.write("%f\n" % (calc.Nefolds))
+            outfile2.write("%f\n" % (calc.N_efolds))
             outfile2.flush()
 
             points += 1
@@ -235,24 +235,21 @@ def main():
             nontrivcount += 1
 
             if SPECTRUM is True:
-                print(y)
-                if we_should_calc_spec(y):
-                    print("Evaluating spectrum " + str(spec_count))
+                # print(y)
+                if check_calculate_spectrum(y):
+                    print(f"Evaluating spectrum {spec_count}")
 
-                    specnum_s = "spec_s" + str(spec_count).zfill(3) + ".dat"
-                    specnum_t = "spec_t" + str(spec_count).zfill(3) + ".dat"
+                    specnum_s = f"spec_s{spec_count:03d}.dat"
+                    specnum_t = f"spec_t{spec_count:03d}.dat"
 
                     spec_count += 1
 
-                    y_final[:NEQS] = path[:NEQS, 3]
-                    y_final[NEQS] = N[3]
+                    y_final = np.append(path[:NEQS, 3], N[3])
 
-                    spectrum_status = spectrum(
+                    spectrum_status, u_s, u_t = spectrum(
                         y_final,
                         y,
-                        u_s,
-                        u_t,
-                        calc.Nefolds,
+                        calc.N_efolds,
                         derivs1,
                         scalarsys,
                         tensorsys
@@ -261,9 +258,9 @@ def main():
 
                     if spectrum_status:
                         errcount += 1
-
-                    np.savetxt(specnum_s, u_s[:,0:knos].T, fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
-                    np.savetxt(specnum_t, u_t[:,0:knos].T, fmt='%.15e', delimiter=' ', newline='\n', header='', footer='', comments='# ', encoding=None)
+                    
+                    save_data(specnum_s, u_s)
+                    save_data(specnum_t, u_t)
 
         elif calc.ret == "insuff":
             insuffcount += 1
@@ -279,35 +276,47 @@ def main():
             initial data are stored in temporary buffers.
             """
             if SPECTRUM is True:
-                # if we calc spectrum, we want path
-                criterion = we_should_calc_spec(y) and calc.ret == "nontrivial"
-
-            if SPECTRUM is False:
-                # if not, choose different criterion
+                """
+                If we calculate the spectrum, we want to save the path
+                """
+                criterion = check_calculate_spectrum(y) and calc.ret == "nontrivial"
+            else:
+                """
+                If we do not, choose different criterion
+                """
                 criterion = we_should_save_this_path(calc.ret, savedone, points)
 
             if criterion:
                 if SPECTRUM is True:
                     """
                     If we are calculating spectra, we must normalize H
-                    here instead of in calcpath.c.
+                    here instead of in calcpath.py.
                     """
-                    for j in range(calc.npoints):
-                        path[0, j] = path[0, j] - path[0, calc.npoints-1]
-                        path[1, j] = path[1, j] * y[1]
+                    path[0, :] -= path[0, calc.npoints-1]
+                    path[1, :] *= y[1]
 
-                fname = "path" + str(outcount).zfill(3) + ".dat"
+                fname = f"path{outcount:03d}.dat"
                 outcount += 1
 
                 save_path(path, N, calc.npoints, fname)
 
                 savedone = 1
 
-            if spec_count > 0:
-                exit()
+            # if spec_count > 0:
+            #     exit()
 
-    print("Done. points = " + str(points) + ", iters = " + str(iters) + ", errcount = " + str(errcount))
-    print("asymcount = " + str(asymcount) + ", nontrivcount = " + str(nontrivcount) + ", insuffcount = " + str(insuffcount) + ", noconvcount = " + str(noconvcount) + ", badncount = " + str(badncount) + ", errcount = " + str(errcount))
+    print(
+        "Done.\n"
+        f"points = {points}\n"
+        f"iters = {iters}\n"
+        f"errcount = {errcount}\n"
+        f"asymcount = {asymcount}\n"
+        f"nontrivcount = {nontrivcount}\n"
+        f"insuffcount = {insuffcount}\n"
+        f"noconvcount = {noconvcount}\n"
+        f"badncount = {badncount}\n"
+        f"errcount = {errcount}\n"
+    )
 
     outfile1.close()
     outfile2.close()
