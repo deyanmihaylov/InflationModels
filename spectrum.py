@@ -49,7 +49,7 @@ def ode_eq_solver(
         fun,
         (N_init, 0),
         u_init,
-        method = 'RK45',
+        method = 'DOP853',
         events=event_fun,
         first_step=step,
         args = fun_args,
@@ -63,8 +63,6 @@ def ode_eq_solver(
 def spectrum(
     y_final,
     y,
-    u_s,
-    u_t,
     N,
     derivs1,
     scalarsys,
@@ -131,7 +129,7 @@ def spectrum(
         derivs2,
         (N, 1000),
         ydoub,
-        method='RK45',
+        method = 'DOP853',
         events=BD_limit,
         first_step=h2,
         rtol=relerr1,
@@ -328,13 +326,16 @@ def spectrum(
     P_s_interp = cubic_spline(k_Planck, P_s)
     P_t_interp = cubic_spline(k_Planck, P_t)
 
-    u_s[0, :knos] = ks.copy()
-    u_s[1, :knos] = spec_norm * P_s_interp(ks*5.41e-58)
+    u_s = np.c_[ks.copy(), spec_norm * P_s_interp(ks*5.41e-58)]
+    u_t = np.c_[ks.copy(), spec_norm * P_t_interp(ks*5.41e-58)]
 
-    u_t[0, :knos] = ks.copy()
-    u_t[1, :knos] = spec_norm * P_t_interp(ks*5.41e-58)
+    # u_s[0, :knos] = ks.copy()
+    # u_s[1, :knos] = spec_norm * P_s_interp(ks*5.41e-58)
 
-    return status
+    # u_t[0, :knos] = ks.copy()
+    # u_t[1, :knos] = spec_norm * P_t_interp(ks*5.41e-58)
+
+    return status, u_s, u_t
 
 def derivs1(t, y, dydN):
     dydN = np.zeros(NEQS, dtype=float, order='C')
