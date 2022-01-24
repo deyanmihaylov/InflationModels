@@ -340,7 +340,7 @@ def spectrum(
 def derivs1(t, y, dydN):
     dydN = np.zeros(NEQS, dtype=float, order='C')
     
-    if y[2] > VERYSMALLNUM:
+    if y[2] > VERY_SMALL_NUM:
         dydN[0]= - np.sqrt(y[2]/(4*np.pi))
     else:
         dydN[0] = 0.
@@ -363,7 +363,7 @@ def derivs1(t, y, dydN):
 def derivs2(N, y):
     dy_dN = np.zeros(NEQS)
     
-    if y[2] > VERYSMALLNUM:
+    if y[2] > VERY_SMALL_NUM:
         dy_dN[0]= - np.sqrt(y[2]/(4*np.pi))
     else:
         dy_dN[0] = 0
