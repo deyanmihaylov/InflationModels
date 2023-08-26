@@ -12,16 +12,14 @@ if SPECTRUM: from spectrum import *
 
 if SAVEPATHS is True: PRINTEVERY = 100
 
-@jitclass(
-    [
-        ('Y', float64[:]),
-        ('initY', float64[:]),
-        ('ret', types.unicode_type),
-        ('npoints', uint64),
-        ('y_init', float64[:]),
-        ('N_efolds', float64),
-    ],
-)
+@jitclass([
+    ('Y', float64[:]),
+    ('initY', float64[:]),
+    ('ret', types.unicode_type),
+    ('npoints', uint64),
+    ('y_init', float64[:]),
+    ('N_efolds', float64),  
+])
 class Calc:
     def __init__(self):
         self.Y = np.zeros(NEQS)
