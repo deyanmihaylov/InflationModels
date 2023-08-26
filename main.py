@@ -183,6 +183,20 @@ def main():
 
         y, N, path, calc.ret = calculate_path(calc)
 
+        match calc.ret:
+            case "asymptote":
+                pass
+            case "nontrivial":
+                pass
+            case "insuff":
+                pass
+            case "noconverge":
+                pass
+            case _:
+                pass
+
+        exit()
+
         if calc.ret == "asymptote":
             """
             Check to see if the spectral index is within the slow roll range
