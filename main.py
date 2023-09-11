@@ -8,8 +8,8 @@ from numba.experimental import jitclass
 from macros import *
 from calcpath import calculate_path
 from int_de import *
-if SPECTRUM: from spectrum import *
 
+if SPECTRUM: from spectrum import *
 if SAVEPATHS is True: PRINTEVERY = 100
 
 @jitclass([
