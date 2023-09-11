@@ -1,13 +1,14 @@
 import numpy as np
 import numba
 
-from MacroDefinitions import *
+from macros import *
 from int_de import *
 
 c = 4 * (np.log(2) + np.euler_gamma) - 5
 
 def calculate_path(
     calc,
+    backend: str = "julia",
 ):
     result = "internal_error"
     
@@ -25,7 +26,12 @@ def calculate_path(
     N_end = 0
     
     inflation_ends.direction = 1
-    forward_solution = int_de(calc.y_init, (N_start, N_end), derivs, event=inflation_ends)
+    forward_solution = int_de(
+        calc.y_init,
+        (N_start, N_end),
+        derivs,
+        event=inflation_ends,
+    )
     xp = forward_solution.t
     yp = forward_solution.y
     y = yp[:,-1].copy()

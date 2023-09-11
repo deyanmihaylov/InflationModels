@@ -5,7 +5,7 @@ import numba
 from numba import types, float64, uint64
 from numba.experimental import jitclass
 
-from MacroDefinitions import *
+from macros import *
 from calcpath import calculate_path
 from int_de import *
 if SPECTRUM: from spectrum import *
@@ -194,8 +194,6 @@ def main():
                 pass
             case _:
                 pass
-
-        exit()
 
         if calc.ret == "asymptote":
             """

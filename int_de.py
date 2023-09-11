@@ -1,8 +1,8 @@
 import numpy as np
-import time
+from time import process_time
 from scipy.integrate import solve_ivp, odeint
 
-from MacroDefinitions import *
+from macros import *
 
 def int_de(
     y,
@@ -14,6 +14,7 @@ def int_de(
     h = 1e-6
     status = 0
 
+    # t1 = process_time()
     sol = solve_ivp(
         derivs,
         [N, Nend],
@@ -22,6 +23,8 @@ def int_de(
         method='DOP853',
         first_step=h,
     )
+    # t2 = process_time()
+    # print(f"Time for int_de: {t2 - t1}")
 
     # print(sol)
 

@@ -1,7 +1,7 @@
 import numpy as np
 import numba as nb
 
-from MacroDefinitions import *
+from macros import *
 
 @nb.njit(cache = True, fastmath = True)
 def _pick_init_vals():

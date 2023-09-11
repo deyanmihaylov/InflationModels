@@ -23,25 +23,29 @@ p = [10.0,28.0,2.66]
 prob = de.ODEProblem(jul_f, u0, tspan, p)
 sol = de.solve(prob)
 
-t1 = process_time()
-sol_new = de.solve(prob)
-t2 = process_time()
-print(t2 - t1)
+julia_times = []
 
-du = np.zeros((3))
+for _ in range(1000):
+    t1 = process_time()
+    sol_new = de.solve(prob)
+    t2 = process_time()
+    julia_times.append(t2 - t1)
 
-def f2(t, u, sigma, rho, beta):
+du = np.zeros((3), dtype=np.float32)
+
+def f2(t, u, du, sigma, rho, beta):
     x, y, z = u
     du[0] = sigma * (y - x)
     du[1] = x * (rho - z) - y
     du[2] = x * y - beta * z
+    return du
 
-# numba_f = numba.jit(f2)
+numba_f = numba.jit(f2, nopython=True)
 
 from scipy.integrate import solve_ivp
 
 sol = solve_ivp(
-    f2,
+    numba_f,
     tspan,
     u0,
     method='RK45',
@@ -49,20 +53,30 @@ sol = solve_ivp(
     dense_output=False,
     events=None,
     vectorized=False,
-    args=(10.0,28.0,2.66),
+    args=(du,10.0,28.0,2.66),
 )
 
-t3 = process_time()
-sol_new = solve_ivp(
-    f2,
-    tspan,
-    u0,
-    method='RK45',
-    t_eval=None,
-    dense_output=False,
-    events=None,
-    vectorized=False,
-    args=(10.0,28.0,2.66),
-)
-t4 = process_time()
-print(t4 - t3)
+scipy_times = []
+
+for _ in range(1000):
+    t3 = process_time()
+    sol_new = solve_ivp(
+        numba_f,
+        tspan,
+        u0,
+        method='RK45',
+        t_eval=None,
+        dense_output=False,
+        events=None,
+        vectorized=False,
+        args=(du,10.0,28.0,2.66),
+    )
+    t4 = process_time()
+
+    scipy_times.append(t4 - t3)
+
+julia_avg = np.mean(julia_times)
+scipy_avg = np.mean(scipy_times)
+
+print(f"Julia: {julia_avg}")
+print(f"scipy: {scipy_avg}")
