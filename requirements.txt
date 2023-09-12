@@ -1,0 +1,5 @@
+diffeqpy==1.2.0
+julia==0.6.1
+numba==0.55.1
+numpy==1.21.5
+scipy==1.9.1
