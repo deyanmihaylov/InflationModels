@@ -150,17 +150,17 @@ def main():
     badncount = 0
     savedone = 0
 
-    if SPECTRUM is True:
-        spec_count = 0
+    if SPECTRUM is True: spec_count = 0
 
     initial_conds = np.genfromtxt(fname = "ics.dat", delimiter=",")
+
     
     while nontrivcount < NUM_POINTS:
         iters += 1
-        # if iters < 120: continue
-        # if iters > 200:
-        #     exit()
+        # if iters <= 11247: continue
+        # if outcount > 10: break
         print(iters)
+        
 
         if iters % 100 == 0:
             if iters % 1000 == 0:
@@ -183,18 +183,18 @@ def main():
 
         y, N, path, calc.ret = calculate_path(calc)
 
-        match calc.ret:
-            case "asymptote":
-                pass
-            case "nontrivial":
-                pass
-            case "insuff":
-                pass
-            case "noconverge":
-                pass
-            case _:
-                pass
-
+        # match calc.ret:
+        #     case "asymptote":
+        #         pass
+        #     case "nontrivial":
+        #         pass
+        #     case "insuff":
+        #         pass
+        #     case "noconverge":
+        #         pass
+        #     case _:
+        #         pass
+        
         if calc.ret == "asymptote":
             """
             Check to see if the spectral index is within the slow roll range
