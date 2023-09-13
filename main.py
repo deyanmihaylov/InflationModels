@@ -93,7 +93,7 @@ def save_data(
     header = "",
 ):
     np.savetxt(
-        file_name,
+        f"./results/{file_name}",
         data,
         fmt=format,
         delimiter=delimiter,

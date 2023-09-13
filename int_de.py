@@ -21,8 +21,12 @@ def int_de(
         y,
         events=event,
         method='DOP853',
-        first_step=h,
+        # first_step=h,
+        # max_step=5.0,
+        rtol=1e-12,
+        atol=1e-8,
     )
+    # print(sol)
     # t2 = process_time()
     # print(f"Time for int_de: {t2 - t1}")
 
