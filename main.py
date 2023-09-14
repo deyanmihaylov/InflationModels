@@ -153,11 +153,10 @@ def main():
     if SPECTRUM is True: spec_count = 0
 
     initial_conds = np.genfromtxt(fname = "ics.dat", delimiter=",")
-
     
     while nontrivcount < NUM_POINTS:
         iters += 1
-        # if iters <= 11247: continue
+        # if iters <= 60092: continue
         # if outcount > 10: break
         print(iters)
         
