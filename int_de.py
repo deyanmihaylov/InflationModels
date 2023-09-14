@@ -22,9 +22,9 @@ def int_de(
         events=event,
         method='DOP853',
         # first_step=h,
-        # max_step=5.0,
-        rtol=1e-12,
-        atol=1e-8,
+        # max_step=1.0,
+        rtol=1e-10,
+        atol=1e-10,
     )
     # print(sol)
     # t2 = process_time()
