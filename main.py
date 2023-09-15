@@ -93,7 +93,7 @@ def save_data(
     header = "",
 ):
     np.savetxt(
-        f"./results/{file_name}",
+        f"/ihome/akosowsky/phg12/inflation/code/InflationModels/results_test1/{file_name}",
         data,
         fmt=format,
         delimiter=delimiter,
